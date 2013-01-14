@@ -1,0 +1,202 @@
+<html>
+<head><title>CS267 Assignment 2: Parallelize Particle Simulation</title></head>
+<body>
+<h1>CS267 Assignment 2: Parallelize Particle Simulation</h1>
+<br>
+
+<h2>Part 1: Serial, MPI, and Shared Memory</h2>
+<h2> Due TBD at 11:59pm</h2>
+
+<h2>Overview</h2>
+
+<p>The purpose of this assignment is introduction to programming in shared and distributed memory models.
+
+<p>Your goal is to parallelize a toy particle simulator 
+(similar particle simulators are used in
+<a href="http://www.thp.uni-duisburg.de/~kai/index_1.html">mechanics</a>,
+<a href="http://www.ks.uiuc.edu/Research/namd/">biology</a>,
+
+<a href="http://www.mpa-garching.mpg.de/gadget/clusters/index.html">astronomy</a>, etc.)
+that reproduces the behavior shown in the following animation:
+
+<p><center><img src="animation.gif"></center>
+
+<p>The range of interaction forces is limited as shown in grey for a selected particle.
+Density is set sufficiently low so that given <i>n</i> particles, only <i>O</i>(<i>n</i>) interactions are
+expected.
+
+<p>Suppose we have a code that runs in time <i>T = O(n)</i> on a single processor. 
+Then we'd hope to run in time <i>T/p</i> when using <i>p</i> processors.
+We'd like you to write parallel codes that approach these expectations.
+<p>
+Don't forget to leave off the <tt> -o </tt> option for your actual timing runs you use in these calculations and plots.
+
+<h2>Reproducible Simulations</h2>
+<p>
+This year there is a significant new element to this homework.  We have discovered over the years that students often have code that gets the wrong answer, but they time it anyways.  That leaves us with a bit of detective work to determine if this is an artifact of floating-point arithmetic errors accumulating in the simulation (which we consider OK), or if they were just doing something bad, like you code doesn't actually move the particle in parallel (You can make very fast code this way, but you can see the problem).  Not finding your neighbors properly can lead to very fast code that is just wrong. Or different parallelization approaches having different accuracies.
+<p>
+In addition to this problem for us, it becomes a problem for the students. They start with correct slow code, create correct faster code, and somewhere along the way in their optimizations they stopped getting the right answer. Some discover that they have a bug, but when did it all go wrong ?
+<p>
+So, to help everyone, this year students are expected to <em>almost</em> exactly reproduce the same results as the serial implementation.  To achieve this "almost-ness" we are expecting equivalence to single-precision.  the program is executing in double-precision.  We create the output file in single-precision and using the <tt>diff</tt> command on your output files to determine if all digits of accuracy are there for every particle for the entire simulation. To make this possible a new data member has been added to the <tt> particle_t</tt> struct, <tt> globalID </tt>.  This is the particles position in the original list of all particles. This allows you to write out your particles in the same order as the original serial code. Use the output of <tt> serial</tt> to check your solutions for 500 and 10,000 particles.  You <em>can</em> achieve perfect binary correctness but it is hard to do this and keep high performance (consider that a stretch goal).  
+
+
+
+
+<h2>Source Code</h2>
+
+<p>
+You may start with the serial and parallel implementations supplied below. All of them
+run in <i>O</i>(<i>n</i><sup>2</sup>) time, which is unacceptably inefficient.
+<br><br>
+<table><tr><td width=20pt></td><td>
+<dl>
+  <dt><a href="particles/serial.cpp">serial.cpp</a></dt>
+  <dd>a serial implementation,</dd>
+
+  <dt><a href="particles/openmp.cpp">openmp.cpp</a></dt>
+  <dd>a shared memory parallel implementation done using OpenMP,</dd>
+  <dt><a href="particles/pthreads.cpp">pthreads.cpp</a></dt>
+  <dd>a shared memory parallel implementation done using pthreads (if you prefer it over OpenMP),</dd>
+  <dt><a href="particles/mpi.cpp">mpi.cpp</a></dt>
+  <dd>a distributed memory parallel implementation done using MPI,</dd>
+
+  <dt><a href="particles/common.cpp">common.cpp</a>, <a href="particles/common.h">common.h</a></dt>
+  <dd>an implementation of common functionality, such as I/O, numerics and timing,</dd>
+  <dt><a href="particles/Makefile">Makefile</a></dt>
+  <dd>a makefile that should work on all NERSC clusters if you uncomment appropriate lines,</dd>
+  <dt>
+  <a href="particles/job-franklin-serial">job-franklin-serial</a>,
+  <a href="particles/job-franklin-pthreads4">job-franklin-pthreads4</a>,
+  <a href="particles/job-franklin-openmp4">job-franklin-openmp4</a>,
+  <a href="particles/job-franklin-mpi4">job-franklin-mpi4</a>,
+  </dt>
+
+  <dt>
+  <a href="particles/job-hopper-serial">job-hopper-serial</a>,
+  <a href="particles/job-hopper-pthreads24">job-hopper-pthreads24</a>,
+  <a href="particles/job-hopper-openmp24">job-hopper-openmp24</a>,
+  <a href="particles/job-hopper-mpi24">job-hopper-mpi24</a>
+  </dt>
+  <dd>sample batch files to launch jobs on Franklin and Hopper. 
+  Use <tt>qsub</tt> to submit on Franklin or Hoppper.</dd>
+  <dt><a href="particles.tar">particles.tar</a></dt>
+  <dd>all above files in one tarball.</dd>
+</dl></td></tr></table>
+<p>You are welcome to use any NERSC cluster in this assignment. If you wish to build it
+on other systems, you might need a custom implementation of pthread barrier, such as:
+<a href="particles/pthread_barrier.c">pthread_barrier.c</a>,
+<a href="particles/pthread_barrier.h">pthread_barrier.h</a>.
+
+<p>You may consider using the following visualization program
+to check the correctness of the result produced by your code: <a href="visualize.tar.gz">Linux/Mac version</a> (requires
+
+<a href="http://www.libsdl.org/">SDL</a>), <a href="visualize.zip">Windows version</a>.
+
+<h2>Submission</h2>
+
+<p>You may work in groups of 2 or 3.  One person in your
+group should be a non-CS student, but otherwise 
+you're responsible for finding a group. After you have chosen a group, please come to the GSI office hours to discuss the distribution of work among team 
+members.  There are <b>three</b> executables we need to be submitted.  You need to create at a minimum one serial code that runs in O(n) time, one distributed memory implementation (MPI) that runs in O(n) time and hopefully O(n/p) scaling, and one shared memory implementation (PThreads or OpenMP) that has a simlar performance rates as your MPI code (or better for a single node), for this part of Homework 2.  
+<br><br>
+<b>Email cs267.brian@gmail.com your report and source codes. We need to be able to build and execute your implementations to receive credit.</b>
+It should be a zip or tar file of a directory that contains both your report and your Makefiles and source code. Spell out in your report what Makefile targets we are to build for the different parts of your report.<br><br>
+Here is the list of items you might show in your report:
+<ul>
+<li>A plot in log-log scale that shows that your serial and parallel codes run in <i>O</i>(<i>n</i>) time
+and a description of the data structures that you used to achieve it.
+<li> A plot in log-linear scale that shows your performance as a percent of peak performance for different numbers of processors. You can use a tool like Craypat to tell you how many flops are performed for different sizes of <tt> n </tt>.
+<li>A description of the synchronization you used in the shared memory implementation.
+<li>A description of the communication you used in the distributed memory implementation.
+<li>A description of the design choices that you tried and how did they affect the performance.
+<li>Speedup plots that show how closely your parallel codes approach the idealized <i>p</i>-times speedup
+and a discussion on whether it is possible to do better.
+<li>Where does the time go?
+Consider breaking down the runtime into computation time, synchronization time and/or communication time.
+How do they scale with <i>p</i>?
+<li>A discussion on using pthreads, OpenMP and MPI.
+</ul>
+You should also undertake one stretch goal for yourselves in the homework.  This can be perhaps creating a PThreads AND an OpenMP implementation and comparing them.  It could be combining MPI with OpenMP as a hybrid parallel code. 
+
+<h2>Resources</h2>
+<ul>
+<li>Programming in shared and distributed memory models have been introduced in Lectures 6 and 7, which are available at <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr13/">the course website</a>.
+
+<li>Shared memory implementations may require using locks that are availabale as <tt><a href="http://msdn.microsoft.com/en-us/library/7d2zxc0s(VS.80).aspx">omp_lock_t</a></tt> in OpenMP (requires <tt>omp.h</tt>) and <tt><a href="http://opengroup.org/onlinepubs/007908799/xsh/pthread_mutex_lock.html">pthread_mutex_t</a></tt> in pthreads (requires <tt>pthread.h</tt>).
+<li>You may consider using atomic operations such as <tt><a href="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html#Atomic-Builtins">__sync_lock_test_and_set</a></tt> with the GNU compiler.  This syntax changes between compilers.
+
+<li>Distributed memory implementation may benefit from overlapping communication and computation that is provided by <a href="http://www.mpi-forum.org/docs/mpi-11-html/node46.html">nonblocking MPI routines</a> such as <tt>MPI_Isend</tt> and <tt>MPI_Irecv</tt>.
+<li>Other useful resources:
+<a href="https://computing.llnl.gov/tutorials/pthreads/">pthreads tutorial</a>,
+<a href="http://openmp.org/wp/2008/11/sc08-openmp-hands-on-tutorial-available/">OpenMP tutorial</a>,
+<a href="http://openmp.org/wp/openmp-specifications/">OpenMP specifications</a> and
+
+<a href="http://www.mpi-forum.org/docs/docs.html">MPI specifications</a>.
+<li> It can be very useful to use a performance measuring tool in this homework.  Parallel profiling is a complicated business but there are a couple of tools that can help.
+  <ul>
+  <li> <a href="http://www.nersc.gov/users/software/debugging-and-profiling/ipm/">IPM</a> is a profiling tool that is inserted into your link command in your Makefile (afer you <tt>module load ipm</tt>) and instrumented versions of your MPI calls are put into your program for you.  
+  <li> <a href="http://www.cs.uoregon.edu/Research/tau/home.php">TAU (Tuning and Analysis Utilities)</a> is a source code instrumentation system to gather profiling information.  You need <tt> module load tau </tt> to access these capabilities.  This system can profile MPI, OpenMP and PThread code, and mixtures, but it has a learning curve.
+  <li> <a href="http://hpctoolkit.org/">HPCToolkit</a> Is a sampling profiler for parallel programs.  You need <tt> module load hpctoolkit </tt>.  You can install the hpcviewer on your own computer for offline analysis, or use the one on NERSC by using the <a href="http://www.nersc.gov/users/data-and-networking/connecting-to-nersc/nx/">NX client</a> to get X windows displayed back to your own machine.
+  <li> If you are using TAU or HPCToolkit you should run in your <tt> $SCRATCH</tt> directory which has faster disk access to the compute nodes (profilers can generate big profile files).
+  </ul>
+</ul>
+
+
+<h1>Part 2: GPU</h1>
+<h2>Due TBD at 11:59pm</h2>
+
+<h2>Overview</h2>
+<p>You will also be running this assignment on GPUs. You have access to Dirac, an experimental GPU cluster at NERSC. Each node has an NVIDIA Tesla C2050, as well as two quad-core CPUs (See the <a href="http://www.nersc.gov/users/computational-systems/dirac/">NERSC Dirac Webpage</a> for more detailed information.)  You access the Dirac subsystem by logging into <tt>carver.nersc.gov</tt> and using specific qsub directives.
+</p>
+
+<h2>Source Code</h2>
+<p>
+We will provide a naive  <i>O</i>(<i>n</i><sup>2</sup>) GPU implementation, similar to the openmp, pthreads, and MPI codes listed above. It will be your task to make the necessary algorithmic changes and machine optimizations to achieve favorable performance across a range of problem sizes. 
+</p>
+<p>
+<ul>
+<li><a href="particles_gpu.tar">particles_gpu.tar</a>
+</ul>
+</p>
+
+<h2>Help</h2>
+<p>
+It may help to have a clean <i>O</i>(<i>n</i>) serial CPU implementation as a reference. If you feel this will help you, please e-mail the GSIs after Part 1 is due and we can provide this.
+<p>
+As with Part 1 you can check the correctness of your algorithm by comparing your solution to the serial implementation up to 100 timesteps.  Your solution is correct up the the tenth decimal place by this point in time with any order of summation, but not correct if you have missed a particle interaction.
+
+</p>
+
+<h2>Submission</h2>
+<p>
+Please include a section in your report detailing your GPU implementation, as well as its performance over varying numbers of particles.
+
+Here is the list of items you might show in your report:
+<ul>
+<li>A plot in log-log scale that shows the performance of your code versus the naive GPU code
+<li>A description of any synchronation needed
+<li>A description of any GPU-specific optimizations you tried
+<li>A discussion on the strengths and weaknesses of CUDA and the current GPU architecture
+</ul>
+
+
+</p>
+
+<h2>GPU Resources: </h2>
+<p>
+<ul>
+<li><a href="http://developer.download.nvidia.com/compute/cuda/3_2_prod/toolkit/docs/CUDA_C_Programming_Guide.pdf">NVIDIA CUDA Programming Guide</a>
+<li><a href="http://en.wikipedia.org/wiki/CUDA">CUDA - Wikipedia</a>
+<li><a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr13/Lectures/CatanzaroIntroToGPUs.pdf">An Introduction to CUDA/OpenCL and Manycore Graphics Processors</a>
+</ul>
+</p>
+
+<p>
+
+
+
+
+<hr>
+[ <a href="../index.html">Back to CS267 Resource Page</a> ]
+</body>
+</html>
