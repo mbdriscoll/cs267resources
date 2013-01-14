@@ -3,7 +3,7 @@
 
 <body>
 <h1>CS267 Assignment 3: Parallelize Knapsack</h1>
-<h2>Due <del>Tuesday April 3</del> Wednesday April 4, 2012 at 11:59pm</h2>
+<h2>Due TBA at 11:59pm</h2>
 
 
 <h2>Overview</h2>
@@ -37,7 +37,7 @@
 
 There are two parts to the assignment.
 <ol>
-<li> There is a bug in <tt>knapsack-race.upc</tt>. You will use the UPC-Thrille tool you learned about in <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr12/Lectures/cs267-upcthrille.pptx">Lecture 16</a> to identify a potential race condition. For part (1), you will run on Franklin, with the Portland Group compilers loaded (PrgEnv-pgi, the default). After downloading the source files, instrument the <tt>knapsack-race.upc</tt> code with UPC-Thrille by typing "<tt>make knapsack-race</tt>". Then, run the instrumented code with "<tt>qsub job-knapsack-race</tt>" from Bash (shell). If you use another shell (like csh, the default), you must call "<tt>qsub -S /bin/bash job-knapsack-race</tt>", or switch shells explictly (e.g., typing "<tt>bash</tt>" before calling "<tt>qsub</tt>"). Examine the resulting output file to find the race condition. Then, you must modify <tt>knapsack-race.upc</tt> to fix the potential race condition without altering correctness -- assume that if no data race occurs, then <tt>knapsack-race.upc</tt> gives the correct answer. In your writeup, you must show the output of the UPC-Thrille tool indicating detection of the potential race condition. You must clearly explain the bug and the fix you implemented. Lastly you must include the UPC-Thrille output showing that your fix indeed removed the race condition. You do not need to submit your (fixed) <tt>knapsack-race.upc</tt></li>.
+<li> There is a bug in <tt>knapsack-race.upc</tt>. You will use the UPC-Thrille tool you learned about in <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr13/Lectures/cs267-upcthrille.pptx">Lecture 16</a> to identify a potential race condition. For part (1), you will run on Franklin, with the Portland Group compilers loaded (PrgEnv-pgi, the default). After downloading the source files, instrument the <tt>knapsack-race.upc</tt> code with UPC-Thrille by typing "<tt>make knapsack-race</tt>". Then, run the instrumented code with "<tt>qsub job-knapsack-race</tt>" from Bash (shell). If you use another shell (like csh, the default), you must call "<tt>qsub -S /bin/bash job-knapsack-race</tt>", or switch shells explictly (e.g., typing "<tt>bash</tt>" before calling "<tt>qsub</tt>"). Examine the resulting output file to find the race condition. Then, you must modify <tt>knapsack-race.upc</tt> to fix the potential race condition without altering correctness -- assume that if no data race occurs, then <tt>knapsack-race.upc</tt> gives the correct answer. In your writeup, you must show the output of the UPC-Thrille tool indicating detection of the potential race condition. You must clearly explain the bug and the fix you implemented. Lastly you must include the UPC-Thrille output showing that your fix indeed removed the race condition. You do not need to submit your (fixed) <tt>knapsack-race.upc</tt></li>.
 <li> Implement <tt>knapsack.upc</tt> that solves the 0-1 knapsack problem -- your code must get the correct answer, like the provided serial and parallel (fixed) codes. You must use UPC - the Makefile is designed for the Cray UPC compiler (PrgEnv-cray) but the Berkeley UPC compiler (module load bupc) is also available. Explain your parallelization strategy in your write-up, especially the communication pattern between parallel processors. Run scaling experiments with 1 to 32 cores (1 to 8 nodes) of Franklin (at least test {1,2,3,4,5,8,16,24,32} cores). Your report should include performance plots demonstrating strong scaling (constant global problem size) and weak scaling (constant per-thread problem size). Try different local (per-thread) problem sizes - how do your strong and weak scaling curves change? Feel free to experiment on Hopper as well.</li>
 </ol>
 
@@ -75,7 +75,7 @@ There are two parts to the assignment.
     </p><h2>Resources</h2>
     <ul>
       <li>                            
-      <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr12/Lectures/lecture08_upc_kay12.ppt">Lecture 8 - UPC</a>,
+      <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr13/Lectures/lecture08_upc_kay12.ppt">Lecture 8 - UPC</a>,
       <a href="http://upc.gwu.edu/docs/upc_specs_1.2.pdf">UPC Specification</a>,
       <a href="http://upc.lbl.gov/">Berkeley UPC Group</a>.
       </li><li><a href="http://gasnet.cs.berkeley.edu/">GASNet</a> is a high-performance
