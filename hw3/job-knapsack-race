@@ -1,0 +1,9 @@
+#PBS -V
+#PBS -l mppwidth=4
+#PBS -l mppnppn=1
+#PBS -j eo
+#PBS -q debug
+#PBS -l walltime=00:05:00
+
+cd $PBS_O_WORKDIR
+ /global/homes/p/parkcs/franklin/bin/upcrun ./knapsack-race

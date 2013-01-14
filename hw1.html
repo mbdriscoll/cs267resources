@@ -1,0 +1,200 @@
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>CS267 Assignment 1: Optimize Matrix Multiplication</title>
+</head>
+
+<body>
+<h1>CS267 Assignment 1: Optimize Matrix Multiplication</h1>
+
+<h2>Due Date: Tuesday February 14, 2012 at 11:59PM</h2>
+
+<h2><a name="problem">Problem statement</a></h2>
+
+<p>Your task is to optimize <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">matrix multiplication</a> (matmul) code to run fast on a single processor core of
+NERSC's <a href="http://www.nersc.gov/users/computational-systems/franklin/">Franklin</a> cluster. </p>
+
+We consider a special case of matmul:
+
+<p><i>C</i> := <i>C</i> + <i>A</i>*<i>B</i></p>
+
+<p>where <i>A</i>, <i>B</i>, and <i>C</i> are <i>n</i> x <i>n</i> matrices. 
+
+This can be performed using 2<i>n</i><sup>3</sup> floating point operations (<i>n</i><sup>3</sup> adds, <i>n</i><sup>3</sup> multiplies), as in the following pseudocode:</p>
+<pre>
+  for i = 1 to n
+    for j = 1 to n
+      for k = 1 to n
+        C(i,j) = C(i,j) + A(i,k) * B(k,j)
+      end
+    end
+  end
+</pre>
+
+<h2><a name="instructions">Instructions</a></h2>
+
+<ul>
+<li> You will be paired up in <a href="hw1teams.html">teams</a> of two. Let your instructors know if you still don't have a teammate after Feb 2.</li>
+<li> Your submission should be a gzipped tar archive, formatted (for Team 4) like:
+<tt>team4_hw1.tgz</tt>. It should contain:
+<ul>
+<li> <tt>dgemm-blocked.c</tt>, a C-language source file containing your implementation of the routine:
+<pre>  void square_dgemm(int, double*, double*, double*);</pre>
+described in pseudocode above. We provide an example <tt>dgemm-blocked.c</tt>, below.</li>
+<li> <tt>Makefile</tt>, only if you modified it. If you modified it, make sure it still correctly builds the provided <tt>benchmark.c</tt>, which we will use to grade your submission.</li>
+<li> <tt>team4_hw1.pdf</tt>, your write-up.</li>
+</ul>
+<a href="http://kb.iu.edu/data/acfi.html">This link</a> tells you how to use <tt>tar</tt> to make a <tt>.tgz</tt> file. <a href="mailto:cs267.sp12@gmail.com">Email your .tgz file to the GSIs</a>.
+<li> Your write-up should contain:
+<ul>
+<li>the names of the people in your group,</li>
+<li>the optimizations used or attempted,</li>
+<li>the results of those optimizations,</li>
+<li>the reason for any odd behavior (e.g., dips) in performance, and</li>
+<li>how the performance changed when running your optimized code on a <i>different</i> machine.</li></ul>
+For the last requirement, you may run your implementation on <a href="http://www.nersc.gov/users/computational-systems/">another NERSC machine</a>, on your laptop/cellphone, on the cloud, etc. 
+</li>
+<li>Please carefully read the <a href="#notes">notes</a> for implementation details. Stay tuned to the  
+<a href="http://piazza.com/class">CS267 Piazza page</a> 
+(<a href="http://piazza.com/berkeley/spring2012/cs267">sign up</a> first) for updates and clarifications, as well as discussion.</li>
+<li> If you are new to optimizing numerical codes, we recommend reading the papers in the <a href="#refs">references</a> section.  
+</ul>
+
+<h3><a name="notes">Notes:</a></h3>
+<ul>
+
+<li>Your grade will mostly depend on two factors:
+<ul>
+<li>performance sustained by your codes on Franklin,</li>
+<li>explanations of the performance features you observed (including what didn't work)</li></ul>
+
+<li> 
+There are other formulations of matmul (eg, <a href = "http://en.wikipedia.org/wiki/Strassen_algorithm">Strassen</a>) that are mathematically equivalent, but perform asymptotically fewer computations - we will not grade submissions that do fewer computations than the 2<i>n</i><sup>3</sup> algorithm. This is actually an <a href="#optional">optional</a> part of HW1.</li>
+
+<li>
+Your code must use <a href="http://en.wikipedia.org/wiki/Double-precision_floating-point_format">double-precision</a> to represent real numbers. 
+A common reference for double-precision matrix multiplication is the <a href="http://www.netlib.org/blas/dgemm.f"><tt>dgemm</tt></a> (<u>d</u>ouble-precision <u>ge</u>neral <u>m</u>atrix-<u>m</u>atrix multiply) routine in the level-3 <a href="http://netlib.org/blas/index.html">BLAS</a>. We will compare your implementation with the tuned <tt>dgemm</tt> implementation in the vendor-provided BLAS library - on Franklin (Cray XT4), we will compare with the Cray LibSci implementation of <tt>dgemm</tt>. Note that <tt>dgemm</tt> has a more general interface than <tt>square_dgemm</tt> - an <a href="#optional">optional</a> part of HW1 encourages you to explore this richer tuning space.</li>
+
+    <li>You may use <a href="http://www.nersc.gov/users/computational-systems/hopper/programming/compiling-codes/">any compiler available</a>. We recommend starting with the GNU C compiler (<tt>gcc</tt>). If you use a compiler other than <tt>gcc</tt>, you will have to change the provided <tt>Makefile</tt>, which uses <tt>gcc</tt>-specific flags. Note that the default compilers, every time you open a new terminal, are PGI - you will have to type "<tt>module swap PrgEnv-pgi PrgEnv-gnu</tt>" to switch to, eg, GNU compilers. You can type <tt>"module list"</tt> to see which compiler wrapper you have loaded.</li>
+    
+	<li>You may use <a href="http://en.wikipedia.org/wiki/C99">C99</a> features when available. The provided <tt>benchmark.c</tt> uses C99 features, so you <i>must</i> compile with C99 support - for <tt>gcc</tt>, this means using the flag <tt>-std=gnu99</tt> (see the <tt>Makefile</tt>). <a href="http://gcc.gnu.org/c99status.html">Here</a> is the status of C99 functionality in <tt>gcc</tt> - note that C90 (ANSI C) is fully implemented.</li>
+	
+	<li> Besides compiler intrinsic functions and built-ins, your code (<tt>dgemm-blocked.c</tt>) must only call into the C standard library. </li>
+	<li> You should try to use your compiler's automatic vectorizer before manually vectorizing.
+	<ul>
+		<li>GNU C provides <a href="http://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html">many</a> extensions, which include intrinsics for vector (SIMD) instructions and data alignment. (Other compilers may have different interfaces.)</li>
+		<li>Ideally your compiler injects the appropriate intrinsics into your code automatically (eg, automatic vectorization and/or automatic data alignment). <a href="http://gcc.gnu.org/projects/tree-ssa/vectorization.html"><tt>gcc</tt>'s auto-vectorizer</a> reports diagnostics that may help you identify if manual vectorization is required.</li>
+		<li>To manually vectorize, you must add compiler intrinsics to your code.</li> 
+		<li>Consult your compiler's documentation.</li>
+	</ul></li>
+
+	<li>You may assume that <tt>A</tt> and <tt>B</tt> do not alias <tt>C</tt>; however, <tt>A</tt> and <tt>B</tt> may alias each other. It is semantically correct to qualify <tt>C</tt> (the last argument to <tt>square_dgemm</tt>) with the C99 <tt>restrict</tt> keyword. There is a lot online about <tt>restrict</tt> and pointer-aliasing - <a href="http://cellperformance.beyond3d.com/articles/2006/05/demystifying-the-restrict-keyword.html">this</a> is a good article to start with. </li>
+
+	<li>The matrices are all stored in <a href="http://en.wikipedia.org/wiki/Row-major_order">column-major order</a>, i.e. <i>C<sub>i,j</sub></i> == <tt>C(i,j)</tt> == <tt>C[(i-1)+(j-1)*n]</tt>, for <tt>i</tt>=1:<tt>n</tt>, where <tt>n</tt> is the number of rows in <tt>C</tt>. Note that we use 1-based indexing when using mathematical symbols and MATLAB index notation (parentheses), and 0-based indexing when using C index notation (square brackets).</li>
+	
+	<li> We will check correctness by the following componentwise error bound:
+<pre> |square_dgemm(n,A,B,0) - A*B| &lt; eps*n*|A|*|B|. </pre> 
+where <tt>eps</tt> := 2<sup>&#8211;52</sup> = 2.2 * 10<sup>&#8211;16</sup> is the <a href="http://en.wikipedia.org/wiki/Machine_epsilon">machine epsilon</a>.</li>
+
+<li>The <a href="http://www.nersc.gov/users/computational-systems/franklin/configuration/compute-nodes/">target processor</a> is a quad-core AMD Opteron 1356 (see <a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD documentation</a>). Its cores have separate 128-bit wide pipelines for addition and multiplication clocked at 2.3GHz.
+This yields 2 double-precision (ie, 64-bit) flops per pipeline * 2 pipelines * 2.3 GHz = 9.2 Gflops/s.
+The following graph shows the performance of the supplied BLAS, blocked, and naive implementations (compiled using <tt>gcc</tt> with optimizations: <tt>-O3 -ffast-math -funroll-loops -march=amdfam10</tt>)
+
+<br><br>
+</p><center><img src="hw1/franklin_perf.png"></center>
+<br>
+
+Part of your grade depends on how fast your code runs, relative to the supplied codes. In previous years, some students actually beat the vendor-optimized BLAS.</li>
+</ul>
+
+
+<h3><a name="optional">Optional:</a></h3>
+<p>These parts are not graded. You should be satisfied with your <tt>square_dgemm</tt> results and write-up before beginning an optional part.</p>
+
+<ul>
+<li> Implement Strassen matmul. Consider switching over to the three-nested-loops algorithm when the recursive subproblems are small enough.</li>
+<li> Support the <tt>dgemm</tt> interface (ie, rectangular matrices, transposing, scalar multiples).</li>
+<li> Try <tt>float</tt> (single-precision). This means you can use 4-way SIMD parallelism on Franklin.</li>
+<li>Try complex numbers (single- and double-precision) - note that complex numbers are part of C99 and <a href="http://gcc.gnu.org/onlinedocs/gcc/Complex.html">supported in <tt>gcc</tt></a>. <a href="http://stackoverflow.com/questions/3211346/complex-mul-and-div-using-sse-instructions">This forum thread</a> gives advice on vectorizing complex multiplication with the conventional approach - but note that there are <a href="http://en.wikipedia.org/wiki/Multiplication_algorithm#Gauss.27s_complex_multiplication_algorithm">other algorithms</a> for this operation.</li>
+<li> Optimize your matmul for the case when the inputs are symmetric. Consider <a href="http://www.netlib.org/lapack/lug/node122.html">conventional</a> and <a href="http://www.netlib.org/lapack/lug/node123.html">packed</a> symmetric storage.</li>
+
+</ul>
+
+<h2><a name="src">Source files</a></h2>
+
+<p>We provide two simple implementations for you to start with: 
+a naive three-loop implementation similar to the pseudocode above, 
+and a more cache-efficient blocked implementation.</p>
+
+<p>The necessary files are in <a href="hw1/cs267_hw1.tgz"><tt>cs267_hw1.tgz</tt></a>. Included are the following:
+<br><br>
+<table><tbody><tr><td width="20pt"></td><td>
+<dl>
+  <dt><a href="hw1/dgemm-naive.c"><tt>dgemm-naive.c</tt></a></dt>
+  <dd>A naive implementation of matrix multiply using three nested loops,</dd>
+  <dt><a href="hw1/dgemm-blocked.c"><tt>dgemm-blocked.c</tt></a></dt>
+  <dd>A simple blocked implementation of matrix multiply,</dd>
+  <dt><a href="hw1/dgemm-blas.c"><tt>dgemm-blas.c</tt></a></dt>
+  <dd>A wrapper for the vendor's optimized BLAS implementation of matrix multiply (default: Cray LibSci),</dd>
+  <dt><a href="hw1/benchmark.c"><tt>benchmark.c</tt></a></dt>
+  <dd>The driver program that measures the runtime and verifies the correctness by comparing with the vendor's implementation,</dd>
+  <dt><a href="hw1/Makefile"><tt>Makefile</tt></a></dt>
+  <dd>A simple makefile to build the executables,</dd>
+  <dt><a href="hw1/job-blas"><tt>job-blas</tt></a>, <a href="hw1/job-blocked"><tt>job-blocked</tt></a>, <a href="hw1/job-naive"><tt>job-naive</tt></a></dt>
+  <dd>Scripts to run the executables on Franklin compute nodes. For example, type "<tt>qsub job-blas</tt>" to benchmark the BLAS version.</dd>
+</dl></td></tr></tbody></table>
+
+The documentation for Franklin's programming environment can be found <a href="#docs">below</a>.</p>
+
+<h2><a name="refs">References</a></h2>
+<ul>
+  <li>Goto, K., and van de Geijn, R. A. 2008. <a href="http://portal.acm.org/citation.cfm?id=1356053">Anatomy of High-Performance Matrix Multiplication</a>, <i>ACM Transactions on Mathematical Software 34</i>, 3, Article 12. <br/>
+  (Note: explains the design decisions for the GotoBLAS <tt>dgemm</tt> implementation, which also apply to your code.)</li>
+  <li>Chellappa, S., Franchetti, F., and Püschel, M. 2008. <a href="http://spiral.ece.cmu.edu:8080/pub-spiral/abstract.jsp?id=100">How To Write Fast Numerical Code: A Small Introduction</a>, <i>Lecture Notes in Computer Science 5235</i>, 196&#8211;259.<br/>
+  (Note: how to write C code for modern compilers and memory hierarchies, so that it runs fast. Recommended reading, especially for newcomers to code optimization.)</li>
+  <li>Bilmes, <i>et al.</i> <a href="http://www.icsi.berkeley.edu/%7Ebilmes/phipac/">The PHiPAC (Portable High Performance ANSI C) Page for BLAS3 Compatible Fast Matrix Matrix Multiply</a>.<br/>
+  (Note: PHiPAC is a code-generating autotuner for matmul that started as a submission for this HW in a previous semester of CS267. Also see <a href="http://math-atlas.sourceforge.net/">ATLAS</a>; both are good examples if you are considering code generation strategies.) </li>
+  <li>Lam, M. S., Rothberg, E. E, and Wolf, M. E. 1991. <a href="http://suif.stanford.edu/papers/lam-asplos91.pdf">The Cache Performance and Optimization of Blocked Algorithms</a>, <i>ASPLOS'91</i>, 63&#8211;74.<br/>
+  (Note: clearly explains cache blocking, supported by with performance models.)
+  </li>
+  <li> Notes on vectorizing with SSE intrinsics, from lecture 2/9/12, <a href="hw1/homework1notes_bvs.ppt">here</a></li>
+  </ul>
+
+<h3><a name="docs">Documentation:</a></h3>
+<ul>
+ <li><a href="http://www.nersc.gov/users/computational-systems/franklin/programming/">Franklin's programming environment</a> documentation
+  <li><a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD architecture</a> documentation.</li>
+  <li><a href="http://gcc.gnu.org/onlinedocs/">GCC</a> documentation - Franklin's default version currently is GCC 4.5.3, but offers older versions too.</li>
+  <li><a href="http://software.intel.com/en-us/avx/">Intel Intrinsic Guide</a> (scroll down). This Java program has a complete reference of all SIMD intrinsics on Intel architectures. Note that Franklin supports SSE, SSE2, SSE3, and <a href="http://en.wikipedia.org/wiki/SSE4a#SSE4a">SSE4a</a> (not SSE4) instruction sets.</li>
+</ul>
+You are also welcome to learn from the source code of state-of-art BLAS implementations
+such as <a href="http://www.tacc.utexas.edu/tacc-projects/gotoblas2">GotoBLAS</a> 
+and <a href="http://math-atlas.sourceforge.net/">ATLAS</a>.
+However, you should not reuse those codes in your submission.
+
+<h2><a name="results">Results</a></h2>
+<p> Below are results recorded on Franklin using the provided benchmark. Performance was reproducible to within 5%, so if you feel your performance is misrepresented, please re-run your submitted code to make sure, and then contact the GSIs (cs267.sp12@gmail.com) with this data.</p>
+<p> Note that</p>
+<ul>
+<li>Team -1 = naive blocked code (b=41) compiled with GNU, "<tt>-O1</tt>" optimization</li>
+<li>Team  0 = Cray LibSci <tt>DGEMM</tt> </li>
+<li>Team 17 = naive blocked code (b=41) compiled with GNU, "<tt>-O3 -ffast-math -funroll-loops -march=amdfam10</tt>" optimization</li>
+</ul>
+<table>
+<tr>
+<td><img src="hw1/hw1-perf-results-1.png" width="500" height="400" /></td>
+<td><img src="hw1/hw1-perf-results-2.png" width="500" height="400" /></td>
+</tr>
+<tr>
+<td><img src="hw1/hw1-perf-results-3.png" width="500" height="400" /></td>
+<td><img src="hw1/hw1-perf-results-4.png" width="500" height="400" /></td>
+</tr>
+<tr>
+</table>
+<td><img src="hw1/hw1-perf-results-5.png" width="500" height="400" /></td>
+<td><img src="hw1/hw1-perf-results-6.png" width="500" height="400" /></td>
+</tr>
+
+<hr>
+[ <a href="http://www.cs.berkeley.edu/~knight/cs267/resources.html">Back to CS267 Resource Page</a> ]
+</body></html>

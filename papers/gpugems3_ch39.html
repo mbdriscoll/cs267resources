@@ -1,0 +1,1340 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">
+
+<head>
+
+	<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+	<title>GPU Gems 3 - Chapter 39. Parallel Prefix Sum (Scan) with CUDA</title>
+
+	<meta name="keywords" content="GPU GPGPU NVIDIA OpenGL Open_GL DirectX DX8 DX9 DX10 texture texture_mapping texturemap texture_map shading shader shaders realtime real_time CAD highperformancecomputing hpc gpu_compute tesla quadroplex geforce quadro hair skin cloth motion_blur dof depth_of_field anisotropic image_processing filtering filters volume volume_rendering financial">
+
+	<link type="image/x-icon" href="http://www.nvidia.com/content/images/NVSphere.ico" rel="shortcut icon">
+
+  <!-- <link rel="stylesheet" href="books.css" type="text/css" />	 -->
+
+
+
+<style type="text/css">
+
+
+
+body {
+
+  min-width: 700px;      /* 2x LC width + RC width */
+
+  
+
+  font-family:Verdana, Geneva, Arial, Helvetica, Sans Serif;
+
+  font-size: 11px;
+
+  background-image:url('http://developer.nvidia.com/docs/TEMPLATE/423/developers_1px_bg_alt2.jpg');
+
+  background-repeat: repeat-x;
+
+  margin-left:5px;
+
+  margin-top:0px;
+
+}
+
+#container {
+
+  padding-top:55px;
+
+  padding-left: 200px;   /* LC width */
+
+  padding-right: 280px;  /* RC width */  
+
+}
+
+#container .column {
+
+  position: relative;
+
+  float: left;
+
+}
+
+#center {
+
+  width: 100%;
+
+  padding: 3px;
+
+  background-color: #FFFFFF;
+
+  border: medium solid #cccccc;
+
+  border-width: 1px;
+
+  
+
+/*  borderColor: #dfdfe7;
+
+  borderColorLight: #e9eaed; */
+
+}
+
+#left {
+
+  width: 200px;          /* LC width */
+
+  right: 200px;          /* LC width */  
+
+  margin-left: -100%;
+
+}
+
+
+
+#container > #left {
+
+  left: -200px;
+
+  margin-left: expression(document.all.center.offsetWidth * -1);
+
+}
+
+
+
+
+
+#right {
+
+  width: 280px;          /* RC width */
+
+  margin-right: -280px;  /* RC width */  
+
+}
+
+#footer {
+
+  clear: both;
+
+}
+
+
+
+#header {
+
+height:80px;
+
+background: transparent url(dev_site_header.jpg) no-repeat fixed top left;
+
+clear: both;
+
+}
+
+
+
+
+
+
+
+
+
+#searchbar {
+
+position: absolute;
+
+top: 25px;
+
+right:200px;
+
+}
+
+	
+
+	
+
+A { 
+
+text-decoration:none;
+
+/* color: #008000; */
+
+/* green color: #76b900; */
+
+/*font-weight:bold; */
+
+color: #5B8C00;
+
+}
+
+
+
+A:hover { 
+
+text-decoration:underline;
+
+color: #000000;
+
+}
+
+
+
+A:visited { 
+
+color: #5B8C00;
+
+}	
+
+
+
+input.searchbox {
+
+font-family: Arial, Helvetica, sans-serif;
+
+font-size: 11px;
+
+color: #666666;
+
+text-indent: 3px;
+
+}
+
+
+
+H1 { 
+
+font-size:15px;
+
+color: #000000;
+
+font-weight:bold;
+
+}
+
+H2 { 
+
+font-size:14px;
+
+color: #000000;
+
+font-weight:bold;
+
+}
+
+H3 { 
+
+font-size:14px;
+
+color: #000080;
+
+font-weight:bold;
+
+}
+
+H4 { 
+
+font-size:12px;
+
+color: #000000;
+
+font-weight:bold;
+
+}
+
+H5 { 
+
+font-size:12px;
+
+color: #000080;
+
+font-weight:bold;
+
+}
+
+H6 { 
+
+font-size:10px;
+
+color: #000000;
+
+font-weight:bold;
+
+}
+
+H6 { 
+
+font-size:10px;
+
+color: #000080;
+
+font-weight:bold;
+
+}
+
+
+
+li.comingsoon {
+
+font-size:11px;
+
+color: #cccccc;
+
+}
+
+
+
+table thead td {
+
+	font-weight: bold;
+
+	background: #E1E1E1;
+
+	text-align: center;
+
+	border-bottom: 3px solid black;
+
+}
+
+
+
+td {
+
+border: 1px solid black;
+
+padding-left: 3px;
+
+padding-right: 3px;
+
+}
+
+
+
+table {
+
+border-collapse: collapse;
+
+border: 3px solid black;
+
+padding: 3px;
+
+}
+
+
+
+pre {
+
+   line-height:50%;
+
+}
+
+pre strong {
+
+white-space: normal;
+
+}
+
+</style>
+
+
+
+<script>
+
+function popUp(url) {
+
+    window.open(url,'Gems3Target',''); 
+
+}
+
+
+
+</script>
+
+
+
+</head><body>
+
+
+
+
+
+<div id="header">
+
+
+
+</div>
+
+
+
+
+
+
+
+<div id="searchbar">
+
+
+
+
+
+
+
+<form method="get" action="http://search.developer.nvidia.com/" name="search">
+
+
+
+
+
+
+
+<input style="font-size:11px;color: #666666;text-indent: 3px;" type="text" name="q" size="20" maxlength="50" onFocus="javascript:document.search.q.value = '';" value="Search">
+
+
+
+
+
+
+
+</form>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<div id="container">
+
+  <div id="center" class="column">
+
+		<a href="http://developer.nvidia.com/object/gpu-gems-3.html"><img src="gpu_gems_3_icon.jpg" align=left border=0 hspace=5> <h1>GPU Gems 3</h1></a>
+
+		<b>GPU Gems 3</b> is now available for free online! 
+
+<br><br>
+
+Please visit our <a href="http://developer.nvidia.com/object/all_documents.html">Recent Documents</a> page to see all the latest whitepapers and conference presentations that can help you with your projects.	
+
+<BR><BR>
+
+You can also subscribe to our <a href="http://news.developer.nvidia.com/rss.xml">Developer News Feed</a> to get notifications of new material on the site.		
+
+		
+
+		<br><br><br>
+
+		<hr>
+<h2>Chapter 39. Parallel Prefix Sum (Scan) with CUDA</h2>
+<p>
+   <em>Mark Harris <br/>NVIDIA Corporation</em>
+</p>
+<p>
+   <em>Shubhabrata Sengupta <br/>University of California, Davis</em>
+</p>
+<p>
+   <em>John D. Owens <br/>University of California, Davis</em>
+</p>
+<h2>39.1 Introduction</h2>
+<p>A simple and common parallel algorithm building block is the <em>all-prefix-sums</em> operation. In this chapter, we define and illustrate the operation, and we discuss in detail its efficient implementation using NVIDIA CUDA. Blelloch (1990) describes all-prefix-sums as a good example of a computation that seems inherently sequential, but for which there is an efficient parallel algorithm. He defines the all-prefix-sums operation as follows:</p>
+<blockquote>
+   <p>The all-prefix-sums operation takes a binary associative operator <img src='elementLinks/U2295.GIF' class='articleIcon' alt='U2295.GIF' /> with identity <em>I</em>, and an array of <em>n</em> elements</p>
+   <table>
+      <thead/>
+      <tbody>
+         <tr>
+            <td>
+               <p>[<em>a</em>
+                  <sub>0</sub>, <em>a</em>
+                  <sub>1</sub>,..., <em>a</em>
+                  <sub>
+                     <em>n</em>&ndash;1</sub>],</p>
+            </td>
+         </tr>
+      </tbody>
+   </table>
+   <p>and returns the array</p>
+   <table>
+      <thead/>
+      <tbody>
+         <tr>
+            <td>
+               <p>[<em>I</em>, <em>a</em>
+                  <sub>0</sub>, (<em>a</em>
+                  <sub>0</sub> <img src='elementLinks/U2295.GIF' class='articleIcon' alt='U2295.GIF' /> <em>a</em>
+                  <sub>1</sub>),..., (<em>a</em>
+                  <sub>0</sub> <img src='elementLinks/U2295.GIF' class='articleIcon' alt='U2295.GIF' /> <em>a</em>
+                  <sub>1</sub> <img src='elementLinks/U2295.GIF' class='articleIcon' alt='U2295.GIF' /> ... <img src='elementLinks/U2295.GIF' class='articleIcon' alt='U2295.GIF' /> <em>a</em>
+                  <sub>
+                     <em>n</em>&ndash;2</sub>)]</p>
+            </td>
+         </tr>
+      </tbody>
+   </table>
+</blockquote>
+<p>For example, if <img src='elementLinks/U2295.GIF' class='articleIcon' alt='U2295.GIF' /> is addition, then the all-prefix-sums operation on the array</p>
+<table>
+   <thead/>
+   <tbody>
+      <tr>
+         <td>
+            <p>[3 1 7 0 4 1 6 3]</p>
+         </td>
+      </tr>
+   </tbody>
+</table>
+<p>would return</p>
+<table>
+   <thead/>
+   <tbody>
+      <tr>
+         <td>
+            <p>[0 3 4 11 11 15 16 22].</p>
+         </td>
+      </tr>
+   </tbody>
+</table>
+<p>The all-prefix-sums operation on an array of data is commonly known as <em>scan</em>. We use this simpler terminology (which comes from the APL programming language [Iverson 1962]) for the remainder of this chapter. The scan just defined is an <em>exclusive</em> scan, because each element <em>j</em> of the result is the sum of all elements up to but <em>not including j</em> in the input array. In an <em>inclusive</em> scan, all elements <em>including j</em> are summed. An exclusive scan can be generated from an inclusive scan by shifting the resulting array right by one element and inserting the identity. Likewise, an inclusive scan can be generated from an exclusive scan by shifting the resulting array left and inserting at the end the sum of the last element of the scan and the last element of the input array (Blelloch 1990). For the remainder of this chapter, we focus on the implementation of exclusive scan and refer to it simply as "scan" unless otherwise specified.</p>
+<p>There are many uses for scan, including, but not limited to, sorting, lexical analysis, string comparison, polynomial evaluation, stream compaction, and building histograms and data structures (graphs, trees, and so on) in parallel. For example applications, we refer the reader to the survey by Blelloch (1990). In this chapter, we cover summed-area tables (used for variable-width image filtering), stream compaction, and radix sort.</p>
+<p>In general, all-prefix-sums can be used to convert certain sequential computations into equivalent, but parallel, computations, as shown in Figure 39-1.</p>
+<h4>Table 39-1. A Sequential Computation and Its Parallel Equivalent</h4>
+<table>
+   <thead>
+      <tr>
+         <td>
+            <p>Sequential</p>
+         </td>
+         <td>
+            <p>Parallel</p>
+         </td>
+      </tr>
+   </thead>
+   <tbody>
+      <tr>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">out[0] = 0;
+for j from 1 to n do
+  out[j] = out[j-1] + f(in[j-1]);</pre>
+            </p>
+         </td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">forall j in parallel do
+  temp[j] = f(in[j]);
+all_prefix_sums(out, temp);</pre>
+            </p>
+         </td>
+      </tr>
+   </tbody>
+</table>
+<h4>39.1.1 Sequential Scan and Work Efficiency</h4>
+<p>Implementing a sequential version of scan (that could be run in a single thread on a CPU, for example) is trivial. We simply loop over all the elements in the input array and add the value of the previous element of the input array to the sum computed for the previous element of the output array, and write the sum to the current element of the output array.</p>
+<pre name="code" class="cpp:nocontrols">out[0] := 0
+for k := 1 to n do
+  out[k] := in[k-1] + out[k-1]</pre>
+<p>This code performs exactly <em>n</em> adds for an array of length <em>n</em>; this is the minimum number of adds required to produce the scanned array. When we develop our parallel version of scan, we would like it to be <em>work-efficient</em>. A parallel computation is work-efficient if it does asymptotically no more work (add operations, in this case) than the sequential version. In other words the two implementations should have the same <em>work complexity</em>, <em>O</em>(<em>n</em>).</p>
+<h2>39.2 Implementation</h2>
+<p>The sequential scan algorithm is poorly suited to GPUs because it does not take advantage of the GPU's data parallelism. We would like to find a parallel version of scan that can utilize the parallel processors of a GPU to speed up its computation. In this section we work through the CUDA implementation of a parallel scan algorithm. We start by introducing a simple but inefficient implementation and then present improvements to both the algorithm and the implementation in CUDA.</p>
+<h4>39.2.1 A Naive Parallel Scan</h4>
+<p>The pseudocode in Algorithm 1 shows a first attempt at a parallel scan. This algorithm is based on the scan algorithm presented by Hillis and Steele (1986) and demonstrated for GPUs by Horn (2005). <a href="javascript:popUp('elementLinks/39fig02.jpg')">Figure 39-2</a> illustrates the operation. The problem with Algorithm 1 is apparent if we examine its work complexity. The algorithm performs <em>O</em>(<em>n</em> log<sub>2</sub>
+   <em>n</em>) addition operations. Remember that a sequential scan performs <em>O</em>(<em>n</em>) adds. Therefore, this naive implementation is not work-efficient. The factor of log<sub>2</sub>
+   <em>n</em> can have a large effect on performance.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig02.jpg')">
+      <img src="elementLinks/39fig02.jpg" alt="39fig02.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig02.jpg')">Figure 39-2</a> The Naive Scan of </p>
+</div>
+<h4>Example 1. A Sum Scan Algorithm That Is Not Work-Efficient</h4>
+<p>1:&nbsp;for&nbsp;<em>d</em>&nbsp;=&nbsp;1&nbsp;to&nbsp;log<sub>2</sub>
+   <em>n</em>&nbsp;<strong>do</strong>
+   <br/>2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>for&nbsp;all</strong>&nbsp;<em>k</em>&nbsp;in&nbsp;parallel&nbsp;<strong>do</strong>
+   <br/>3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>if</strong>&nbsp;<em>k</em>&nbsp;<img src='elementLinks/U2265.GIF' class='articleIcon' alt='U2265.GIF' />&nbsp;2<em>
+      <sup>d</sup>
+   </em>&nbsp;<strong>then</strong>
+   <br/>4:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>x</em>[<em>k</em>]&nbsp;=&nbsp;<em>x</em>[<em>k</em>&nbsp;&ndash;&nbsp;2<sup>
+      <em>d</em>-1</sup>]&nbsp;+&nbsp;<em>x</em>[<em>k</em>]<br/>
+</p>
+<p>Algorithm 1 assumes that there are as many processors as data elements. For large arrays on a GPU running CUDA, this is not usually the case. Instead, the programmer must divide the computation among a number of <em>thread blocks</em> that each scans a portion of the array on a single multiprocessor of the GPU. Even still, the number of processors in a multiprocessor is typically much smaller than the number of threads per block, so the hardware automatically partitions the "for all" statement into small parallel batches (called <em>warps</em>) that are executed sequentially on the multiprocessor. An NVIDIA 8 Series GPU executes warps of 32 threads in parallel. Because not all threads run simultaneously for arrays larger than the warp size, Algorithm 1 will not work, because it performs the scan in place on the array. The results of one warp will be overwritten by threads in another warp.</p>
+<p>To solve this problem, we need to double-buffer the array we are scanning using two temporary arrays. Pseudocode for this is given in Algorithm 2, and CUDA C code for the naive scan is given in Listing 39-1. Note that this code will run on only a single thread block of the GPU, and so the size of the arrays it can process is limited (to 512 elements on NVIDIA 8 Series GPUs). Extension of scan to large arrays is discussed in Section 39.2.4.</p>
+<h4>Example 2. A Double-Buffered Version of the Sum Scan from Algorithm 1</h4>
+<p>1:&nbsp;<strong>for</strong>&nbsp;<em>d</em>&nbsp;=&nbsp;1&nbsp;to&nbsp;log<sub>2</sub>
+   <em>n</em>&nbsp;<strong>do</strong>
+   <br/>2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>for&nbsp;all</strong>&nbsp;<em>k</em>&nbsp;in&nbsp;parallel&nbsp;<strong>do</strong>
+   <br/>3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>if</strong>&nbsp;k&nbsp;<img src='elementLinks/U2265.GIF' class='articleIcon' alt='U2265.GIF' />&nbsp;2<sup>
+      <em>d</em>
+   </sup>&nbsp;<strong>then</strong>
+   <br/>4:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>x</em>[out][<em>k</em>]&nbsp;=&nbsp;<em>x</em>[in][<em>k</em>&nbsp;&ndash;&nbsp;2<sup>
+      <em>d</em>-1</sup>]&nbsp;+&nbsp;<em>x</em>[in][<em>k</em>]<br/>5:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>else</strong>
+   <br/>6:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>x</em>[out][<em>k</em>]&nbsp;=&nbsp;<em>x</em>[in][<em>k</em>]<br/>
+</p>
+<h4>Example 39-1. CUDA C Code for the Naive Scan Algorithm</h4>
+<p>
+   <em>This version can handle arrays only as large as can be processed by a single thread block running on one multiprocessor of a GPU.</em>
+</p>
+<pre name="code" class="cpp:nocontrols">
+   __global__ void scan(float *g_odata, float *g_idata, int n)
+{
+  extern __shared__ float temp[]; // allocated on invocation
+   int thid = threadIdx.x;
+  int1 pout = 0, pin = 1;
+  // Load input into shared memory.
+   // This is exclusive scan, so shift right by one
+   // and set first element to 0
+  temp[pout*n + thid] = (thid &gt; 0) ? g_idata[thid-1] : 0;
+  __syncthreads();
+  for (int offset = 1; offset &lt; n; offset *= 2)
+  {
+    pout = 1 - pout; // swap double buffer indices
+    pin = 1 - pout;
+    if (thid &gt;= offset)
+      temp[pout*n+thid] += temp[pin*n+thid - offset];
+    else
+      temp[pout*n+thid] = temp[pin*n+thid];
+    __syncthreads();
+  }
+  g_odata[thid] = temp[pout*n+thid1]; // write output
+}</pre>
+<h4>39.2.2 A Work-Efficient Parallel Scan</h4>
+<p>Our implementation of scan from Section 39.2.1 would probably perform very badly on large arrays due to its work-inefficiency. We would like to find an algorithm that would approach the efficiency of the sequential algorithm, while still taking advantage of the parallelism in the GPU. Our goal in this section is to develop a work-efficient scan algorithm for CUDA that avoids the extra factor of log<sub>2</sub>
+   <em>n</em> work performed by the naive algorithm. This algorithm is based on the one presented by Blelloch (1990). To do this we will use an algorithmic pattern that arises often in parallel computing: <em>balanced trees</em>. The idea is to build a balanced binary tree on the input data and sweep it to and from the root to compute the prefix sum. A binary tree with <em>n</em> leaves has <em>d</em> = log<sub>2</sub>
+   <em>n</em> levels, and each level <em>d</em> has 2<sup>
+      <em>d</em>
+   </sup> nodes. If we perform one add per node, then we will perform <em>O</em>(<em>n</em>) adds on a single traversal of the tree.</p>
+<p>The tree we build is not an actual data structure, but a concept we use to determine what each thread does at each step of the traversal. In this work-efficient scan algorithm, we perform the operations in place on an array in shared memory. The algorithm consists of two phases: the <em>reduce phase</em> (also known as the <em>up-sweep phase</em>) and the <em>down-sweep phase</em>. In the reduce phase, we traverse the tree from leaves to root computing partial sums at internal nodes of the tree, as shown in <a href="javascript:popUp('elementLinks/39fig03.jpg')">Figure 39-3</a>. This is also known as a parallel reduction, because after this phase, the root node (the last node in the array) holds the sum of all nodes in the array. Pseudocode for the reduce phase is given in Algorithm 3.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig03.jpg')">
+      <img src="elementLinks/39fig03.jpg" alt="39fig03.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig03.jpg')">Figure 39-3</a> An Illustration of the Up-Sweep, or Reduce, Phase of a Work-Efficient Sum Scan Algorithm</p>
+</div>
+<h4>Example 3. The Up-Sweep (Reduce) Phase of a Work-Efficient Sum Scan Algorithm (After Blelloch 1990)</h4>
+<p>1:&nbsp;<strong>for</strong>&nbsp;<em>d</em>&nbsp;=&nbsp;0&nbsp;to&nbsp;log<sub>2</sub>
+   <em>n</em>&nbsp;&ndash;&nbsp;1&nbsp;<strong>do</strong>
+   <br/>2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>for&nbsp;all</strong>&nbsp;<em>k</em>&nbsp;=&nbsp;0&nbsp;to&nbsp;<em>n</em>&nbsp;&ndash;&nbsp;1&nbsp;by&nbsp;2<sup>
+      <em>d</em>+1</sup>&nbsp;in&nbsp;parallel&nbsp;<strong>do</strong>
+   <br/>3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>+1</sup>&nbsp;&ndash;&nbsp;1]&nbsp;=&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>&nbsp;&ndash;&nbsp;1]&nbsp;+&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>+1&nbsp;&ndash;&nbsp;1]<br/>
+</p>
+<p>In the down-sweep phase, we traverse back down the tree from the root, using the partial sums from the reduce phase to build the scan in place on the array. We start by inserting zero at the root of the tree, and on each step, each node at the current level passes its own value to its left child, and the sum of its value and the former value of its left child to its right child. The down-sweep is shown in <a href="javascript:popUp('elementLinks/39fig04.jpg')">Figure 39-4</a>, and pseudocode is given in Algorithm 4. CUDA C code for the complete algorithm is given in Listing 39-2. Like the naive scan code in Section 39.2.1, the code in Listing 39-2 will run on only a single thread block. Because it processes two elements per thread, the maximum array size this code can scan is 1,024 elements on an NVIDIA 8 Series GPU. Scans of larger arrays are discussed in Section 39.2.4.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig04.jpg')">
+      <img src="elementLinks/39fig04.jpg" alt="39fig04.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig04.jpg')">Figure 39-4</a> An Illustration of the Down-Sweep Phase of the Work-Efficient Parallel Sum Scan Algorithm</p>
+</div>
+<h4>Example 4. The Down-Sweep Phase of a Work-Efficient Parallel Sum Scan Algorithm (After Blelloch 1990)</h4>
+<p>1:&nbsp;<em>x</em>[<em>n</em>&nbsp;&ndash;&nbsp;1]&nbsp;<img src='elementLinks/U2190.GIF' class='articleIcon' alt='U2190.GIF' />&nbsp;0<br/>2:&nbsp;<strong>for</strong>&nbsp;<em>d</em>&nbsp;=&nbsp;log<sub>2</sub>
+   <em>n</em>&nbsp;&ndash;&nbsp;1&nbsp;down&nbsp;to&nbsp;0&nbsp;<strong>do</strong>
+   <br/>3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>for&nbsp;all</strong>&nbsp;<em>k</em>&nbsp;=&nbsp;0&nbsp;to&nbsp;<em>n</em>&nbsp;&ndash;&nbsp;1&nbsp;by&nbsp;2<sup>
+      <em>d</em>
+   </sup>+1&nbsp;in&nbsp;parallel&nbsp;<strong>do</strong>
+   <br/>4:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>t</em>&nbsp;=&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>&nbsp;&ndash;&nbsp;1]<br/>5:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>&nbsp;&ndash;&nbsp;1]&nbsp;=&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>+1&nbsp;&ndash;&nbsp;1]<br/>6:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>+1&nbsp;&ndash;&nbsp;1]&nbsp;=&nbsp;<em>t</em>&nbsp;+&nbsp;&nbsp;<em>x</em>[<em>k</em>&nbsp;+&nbsp;&nbsp;2<sup>
+      <em>d</em>
+   </sup>+1&nbsp;&ndash;&nbsp;1]<br/>
+</p>
+<p>The scan algorithm in Algorithm 4 performs <em>O</em>(<em>n</em>) operations (it performs 2 x (<em>n</em> &ndash; 1) adds and <em>n</em> &ndash; 1 swaps); therefore it is work-efficient and, for large arrays, should perform much better than the naive algorithm from the previous section. Algorithmic efficiency is not enough; we must also use the hardware efficiently. If we examine the operation of this scan on a GPU running CUDA, we will find that it suffers from many shared memory bank conflicts. These hurt the performance of every access to shared memory and significantly affect overall performance. In the next section, we look at some simple modifications we can make to the memory address computations to recover much of that lost performance.</p>
+<h4>Example 39-2. CUDA C Code for the Work-Efficient Sum Scan of Algorithms 3 and 4.</h4>
+<table>
+   <thead/>
+   <tbody>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               The highlighted blocks are discussed in Section 39.2.3.
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">
+__global__ void prescan(float *g_odata, float *g_idata, int n)
+{
+extern __shared__ float temp[];  // allocated on invocation
+int thid = threadIdx.x;
+int offset = 1;</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <p>
+               <strong>A</strong>
+            </p>
+         </td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">temp[2*thid] = g_idata[2*thid]; // load input into shared memory
+temp[2*thid+1] = g_idata[2*thid+1];</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">for (int d = n>>1; d > 0; d >>= 1)                    // build sum in place up the tree
+{ 
+__syncthreads();
+   if (thid < d)
+   {</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <p>
+               <strong>B</strong>
+            </p>
+         </td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">
+    int ai = offset*(2*thid+1)-1;
+    int bi = offset*(2*thid+2)-1;
+    </pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">      temp[bi] += temp[ai];
+   }
+   offset *= 2;
+}</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <p>
+               <strong>C</strong>
+            </p>
+         </td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">   
+if (thid == 0) { temp[n - 1] = 0; } // clear the last element
+               </pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">
+for (int d = 1; d < n; d *= 2) // traverse down tree & build scan
+{
+     offset >>= 1;
+     __syncthreads();
+     if (thid < d)                     
+     {</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <p>
+               <strong>D</strong>
+            </p>
+         </td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">       
+    int ai = offset*(2*thid+1)-1;
+    int bi = offset*(2*thid+2)-1;</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">       
+float t = temp[ai];
+temp[ai] = temp[bi];
+temp[bi] += t; 
+      }
+}
+ __syncthreads();</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <p>
+               <strong>E</strong>
+            </p>
+         </td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">     g_odata[2*thid] = temp[2*thid]; // write results to device memory
+     g_odata[2*thid+1] = temp[2*thid+1];</pre>
+            </p>
+         </td>
+      </tr>
+      <tr>
+         <td>&nbsp;</td>
+         <td>
+            <p>
+               <pre name="code" class="cpp:nocontrols">}</pre>
+            </p>
+         </td>
+      </tr>
+   </tbody>
+</table>
+<h4>39.2.3 Avoiding Bank Conflicts</h4>
+<p>The scan algorithm of the previous section performs approximately as much work as an optimal sequential algorithm. Despite this work-efficiency, it is not yet efficient on NVIDIA GPU hardware, due to its memory access patterns. As described in the <em>NVIDIA CUDA Programming Guide</em> (NVIDIA 2007), the shared memory exploited by this scan algorithm is made up of multiple banks. When multiple threads in the same warp access the same bank, a bank conflict occurs unless all threads of the warp access the same address within the same 32-bit word. The number of threads that access a single bank is called the <em>degree</em> of the bank conflict. Bank conflicts cause serialization of the multiple accesses to the memory bank, so that a shared memory access with a degree-<em>n</em> bank conflict requires <em>n</em> times as many cycles to process as an access with no conflict. On NVIDIA 8 Series GPUs, which execute 16 threads in parallel in a halfwarp, the worst case is a degree-16 bank conflict.</p>
+<p>Binary tree algorithms such as our work-efficient scan double the stride between memory accesses at each level of the tree, simultaneously doubling the number of threads that access the same bank. For deep trees, as we approach the middle levels of the tree, the degree of the bank conflicts increases, and then it decreases again near the root, where the number of active threads decreases (due to the <tt>if</tt> statement in Listing 39-2). For example, if we are scanning a 512-element array, the shared memory reads and writes in the inner loops of Listing 39-2 experience up to 16-way bank conflicts. This has a significant effect on performance.</p>
+<p>Bank conflicts are avoidable in most CUDA computations if care is taken when accessing <tt>__shared__</tt> memory arrays. We can avoid most bank conflicts in scan by adding a variable amount of padding to each shared memory array index we compute. Specifically, we add to the index the value of the index divided by the number of shared memory banks. This is demonstrated in <a href="javascript:popUp('elementLinks/39fig05.jpg')">Figure 39-5</a>. We start from the work-efficient scan code in Listing 39-2, modifying only the highlighted blocks A through E. To simplify the code changes, we define a macro <tt>CONFLICT_FREE_OFFSET</tt>, shown in Listing 39-3.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig05.jpg')">
+      <img src="elementLinks/39fig05.jpg" alt="39fig05.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig05.jpg')">Figure 39-5</a> Simple Padding Applied to Shared Memory Addresses Can Eliminate High-Degree Bank Conflicts During Tree-Based Algorithms Like Scan</p>
+</div>
+<h4>Example 39-3. Macro Used for Computing Bank-Conflict-Free Shared Memory Array Indices</h4>
+<pre name="code" class="cpp:nocontrols">#define NUM_BANKS 16
+#define LOG_NUM_BANKS 4
+#define CONFLICT_FREE_OFFSET(n) \
+    ((n) &gt;&gt; NUM_BANKS + (n) &gt;&gt; (2 * LOG_NUM_BANKS))</pre>
+<p>The blocks A through E in Listing 39-2 need to be modified using this macro to avoid bank conflicts. Two changes must be made to block A. Each thread loads two array elements from the <tt>__global__</tt> array <tt>g_idata</tt> into the <tt>__shared__</tt> array <tt>temp</tt>. In the original code, each thread loads two adjacent elements, resulting in the interleaved indexing of the shared memory array, incurring two-way bank conflicts. By instead loading two elements from separate halves of the array, we avoid these bank conflicts. Also, to avoid bank conflicts during the tree traversal, we need to add padding to the shared memory array every <tt>NUM_BANKS</tt> (16) elements. We do this using the macro in Listing 39-3 as shown in Listing 39-4. Note that we store the offsets to the shared memory indices so that we can use them again at the end of the scan, when writing the results back to the output array <tt>g_odata</tt> in block E.</p>
+<h4>Example 39-4. Modifications to the Work-Efficient Scan Code to Avoid Shared Memory Bank Conflicts</h4>
+<p>
+   <strong>Block A:</strong>
+</p>
+<pre name="code" class="cpp:nocontrols">
+   int ai = thid;
+int bi = thid + (n/2);
+int bankOffsetA = CONFLICT_FREE_OFFSET(ai)
+int bankOffsetB = CONFLICT_FREE_OFFSET(bi)
+temp[ai + bankOffsetA] = g_idata[ai]
+temp[bi + bankOffsetB] = g_idata[bi]</pre>
+<p>
+   <strong>Blocks B and D are identical:</strong>
+</p>
+<pre name="code" class="cpp:nocontrols">
+   int ai = offset*(2*thid+1)-1;
+int bi = offset*(2*thid+2)-1;
+ai += CONFLICT_FREE_OFFSET(ai)
+bi += CONFLICT_FREE_OFFSET(bi)</pre>
+<p>
+   <strong>Block C:</strong>
+</p>
+<pre name="code" class="cpp:nocontrols">
+   if (thid==0) { temp[n - 1 + CONFLICT_FREE_OFFSET(n - 1)] = 0;}</pre>
+<p>
+   <strong>Block E:</strong>
+</p>
+<pre name="code" class="cpp:nocontrols">g_odata[ai] = temp[ai + bankOffsetA];
+g_odata[bi] = temp[bi + bankOffsetB];</pre>
+<p>&nbsp;</p>
+<h4>39.2.4 Arrays of Arbitrary Size</h4>
+<p>The algorithms given in the previous sections scan an array inside a single thread block. This is fine for small arrays, up to twice the maximum number of threads in a block (since each thread loads and processes two elements). On NVIDIA 8 Series GPUs, this limits us to a maximum of 1,024 elements. Also, the array size must be a power of two. In this section, we explain how to extend the algorithm to scan large arrays of arbitrary (non-power-of-two) dimensions. This algorithm is based on the explanation provided by Blelloch (1990).</p>
+<p>The basic idea is simple. We divide the large array into blocks that each can be scanned by a single thread block, and then we scan the blocks and write the total sum of each block to another array of block sums. We then scan the block sums, generating an array of block increments that that are added to all elements in their respective blocks. In more detail, let <em>N</em> be the number of elements in the input array, and <em>B</em> be the number of elements processed in a block. We allocate <em>N</em>/<em>B</em> thread blocks of <em>B</em>/2 threads each. (Here we assume that <em>N</em> is a multiple of <em>B</em>, and we extend to arbitrary dimensions in the next paragraph.) A typical choice for <em>B</em> on NVIDIA 8 Series GPUs is 128. We use the scan algorithm of the previous sections to scan each block <em>i</em> independently, storing the resulting scans to sequential locations of the output array. We make one minor modification to the scan algorithm. Before zeroing the last element of block <em>i</em> (the block of code labeled B in Listing 39-2), we store the value (the total sum of block <em>i</em>) to an auxiliary array <tt>SUMS</tt>. We then scan <tt>SUMS</tt> in the same manner, writing the result to an array <tt>INCR</tt>. We then add <tt>INCR[i]</tt> to all elements of block <tt>i</tt> using a simple uniform add kernel invoked on <em>N</em>/<em>B</em> thread blocks of <em>B</em>/2 threads each. This is demonstrated in <a href="javascript:popUp('elementLinks/39fig06.jpg')">Figure 39-6</a>. For details of the implementation, please see the source code available at <a onclick="newwindow(this)" href="http://www.gpgpu.org/scan-gpugems3/">http://www.gpgpu.org/scan-gpugems3/</a>.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig06.jpg')">
+      <img src="elementLinks/39fig06.jpg" alt="39fig06.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig06.jpg')">Figure 39-6</a> Algorithm for Performing a Sum Scan on a Large Array of Values</p>
+</div>
+<p>Handling non-power-of-two dimensions is easy. We simply pad the array out to the next multiple of the block size <em>B</em>. The scan algorithm is not dependent on elements past the end of the array, so we don't have to use a special case for the last block.</p>
+<h4>39.2.5 Further Optimization and Performance Results</h4>
+<p>After optimizing shared memory accesses, the main bottlenecks left in the scan code are global memory latency and instruction overhead due to looping and address computation instructions. To better cover the global memory access latency and improve overall efficiency, we need to do more computation per thread. We employ a technique suggested by David Lichterman, which processes eight elements per thread instead of two by loading two <tt>float4</tt> elements per thread rather than two <tt>float</tt> elements (Lichterman 2007). Each thread performs a sequential scan of each <tt>float4</tt>, stores the first three elements of each scan in registers, and inserts the total sum into the shared memory array. With the partial sums from all threads in shared memory, we perform an identical tree-based scan to the one given in Listing 39-2. Each thread then constructs two <tt>float4</tt> values by adding the corresponding scanned element from shared memory to each of the partial sums stored in registers. Finally, the <tt>float4</tt> values are written to global memory. This approach, which is more than twice as fast as the code given previously, is a consequence of Brent's Theorem and is a common technique for improving the efficiency of parallel algorithms (Quinn 1994).</p>
+<p>To reduce bookkeeping and loop instruction overhead, we unroll the loops in Algorithms 3 and 4. Because our block size is fixed, we can completely unroll these loops, greatly reducing the extra instructions required to traverse the tree in a loop.</p>
+<p>Our efforts to create an efficient scan implementation in CUDA have paid off. Performance is up to 20 times faster than a sequential version of scan running on a fast CPU, as shown in the graph in <a href="javascript:popUp('elementLinks/39fig07.jpg')">Figure 39-7</a>. Also, thanks to the advantages provided by CUDA, we outperform an optimized OpenGL implementation running on the same GPU by up to a factor of seven. The graph also shows the performance we achieve when we use the naive scan implementation from Section 39.2.1 for each block. Because both the naive scan and the work-efficient scan must be divided across blocks of the same number of threads, the performance of the naive scan is slower by a factor of <em>O</em>(log<sub>2</sub> 
+   <em>B</em>), where <em>B</em> is the block size, rather than a factor of <em>O</em>(log<sub>2</sub>
+   <em>n</em>). <a href="javascript:popUp('elementLinks/39fig08.jpg')">Figure 39-8</a> compares the performance of our best CUDA implementation with versions lacking bankconflict avoidance and loop unrolling.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig07.jpg')">
+      <img src="elementLinks/39fig07.jpg" alt="39fig07.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig07.jpg')">Figure 39-7</a> Performance of the Work-Efficient, Bank-Conflict-Free Scan Implemented in CUDA Compared to a Sequential Scan Implemented in C++, and a Work-Efficient Implementation in OpenGL</p>
+</div>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig08.jpg')">
+      <img src="elementLinks/39fig08.jpg" alt="39fig08.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig08.jpg')">Figure 39-8</a> Comparison of Performance of the Work-Efficient Scan Implemented in CUDA with Optimizations to Avoid Bank Conflicts and to Unroll Loops</p>
+</div>
+<p>The scan implementation discussed in this chapter, along with example applications, is available online at <a onclick="newwindow(this)" href="http://www.gpgpu.org/scan-gpugems3/">http://www.gpgpu.org/scan-gpugems3/</a>.</p>
+<h4>39.2.6 The Advantages of CUDA over the OpenGL Implementation</h4>
+<p>Prior to the introduction of CUDA, several researchers implemented scan using graphics APIs such as OpenGL and Direct3D (see Section 39.3.4 for more). To demonstrate the advantages CUDA has over these APIs for computations like scan, in this section we briefly describe the work-efficient OpenGL inclusive-scan implementation of Sengupta et al. (2006). Their implementation is a hybrid algorithm that performs a configurable number of reduce steps as shown in Algorithm 5. It then runs the double-buffered version of the sum scan algorithm previously shown in Algorithm 2 on the result of the reduce step. Finally it performs the down-sweep as shown in Algorithm 6.</p>
+<h4>Example 5. The Reduce Step of the OpenGL Scan Algorithm</h4>
+<p>1:&nbsp;<strong>for</strong>&nbsp;<em>d</em>&nbsp;=&nbsp;1&nbsp;to&nbsp;log<sub>2</sub>
+   <em>n</em>&nbsp;<strong>do</strong>
+   <br/>2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>for&nbsp;all</strong>&nbsp;<em>k</em>&nbsp;=&nbsp;1&nbsp;to&nbsp;<em>n</em>/2<sup>
+      <em>d</em>
+   </sup>&nbsp;&ndash;&nbsp;1&nbsp;in&nbsp;parallel&nbsp;<strong>do</strong>
+   <br/>3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>a</em>[<em>d</em>][<em>k</em>]&nbsp;=&nbsp;<em>a</em>[<em>d</em>&nbsp;&ndash;&nbsp;1][2<em>k</em>]&nbsp;+&nbsp;<em>a</em>[<em>d</em>&nbsp;&ndash;&nbsp;1][2<em>k</em>&nbsp;+&nbsp;1]]<br/>
+</p>
+<h4>Example 6. The Down-Sweep Step of the OpenGL Scan Algorithm</h4>
+<p>1:&nbsp;<strong>for</strong>&nbsp;<em>d</em>&nbsp;=&nbsp;log<sub>2</sub>
+   <em>n</em>&nbsp;&ndash;&nbsp;1&nbsp;down&nbsp;to&nbsp;0&nbsp;<strong>do</strong>
+   <br/>2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>for&nbsp;all</strong>&nbsp;<em>k</em>&nbsp;=&nbsp;0&nbsp;to&nbsp;<em>n</em>/2<sup>
+      <em>d</em>
+   </sup>&nbsp;&ndash;&nbsp;1&nbsp;in&nbsp;parallel&nbsp;<strong>do</strong>
+   <br/>3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>if</strong>&nbsp;<em>i</em>&nbsp;&gt;&nbsp;0&nbsp;<strong>then</strong>
+   <br/>4:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>if</strong>&nbsp;<em>k</em>&nbsp;mod&nbsp;2&nbsp;<img src='elementLinks/U2260.GIF' class='articleIcon' alt='U2260.GIF' />&nbsp;0&nbsp;<strong>then</strong>
+   <br/>5:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>a</em>[<em>d</em>][<em>k</em>]&nbsp;=&nbsp;<em>a</em>[<em>d</em>&nbsp;+&nbsp;1][<em>k</em>/2]<br/>6:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>else</strong>
+   <br/>7:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>a</em>[<em>d</em>][<em>i</em>]&nbsp;=&nbsp;<em>a</em>[<em>d</em>&nbsp;+&nbsp;1][<em>k</em>/2&nbsp;&ndash;&nbsp;1]<br/>
+</p>
+<p>The OpenGL scan computation is implemented using pixel shaders, and each <tt>a[d]</tt> array is a two-dimensional texture on the GPU. Writing to these arrays is performed using render-to-texture in OpenGL. Thus, each loop iteration in Algorithm 5 and Algorithm 2 requires reading from one texture and writing to another.</p>
+<p>The main advantages CUDA has over OpenGL are its on-chip shared memory, thread synchronization functionality, and scatter writes to memory, which are not exposed to OpenGL pixel shaders. CUDA divides the work of a large scan into many blocks, and each block is processed entirely on-chip by a single multiprocessor before any data is written to off-chip memory. In OpenGL, all memory updates are off-chip memory updates. Thus, the bandwidth used by the OpenGL implementation is much higher and therefore performance is lower, as shown previously in <a href="javascript:popUp('elementLinks/39fig07.jpg')">Figure 39-7</a>.</p>
+<h2>39.3 Applications of Scan</h2>
+<p>As we described in the introduction, scan has a wide variety of applications. In this section, we cover three applications of scan: stream compaction, summed-area tables, and radix sort.</p>
+<h4>39.3.1 Stream Compaction</h4>
+<p>Stream compaction is an important primitive in a variety of general-purpose applications, including collision detection and sparse matrix compression. In fact, stream compaction was the focus of most of the previous GPU work on scan (see Section 39.3.4). Stream compaction is the primary method for transforming a heterogeneous vector, with elements of many types, into homogeneous vectors, in which each element has the same type. This is particularly useful with vectors that have some elements that are interesting and many elements that are not interesting. Stream compaction produces a smaller vector with only interesting elements. With this smaller vector, computation is more efficient, because we compute on only interesting elements, and thus transfer costs, particularly between the GPU and CPU, are potentially greatly reduced.</p>
+<p>Informally, stream compaction is a filtering operation: from an input vector, it selects a subset of this vector and packs that subset into a dense output vector. <a href="javascript:popUp('elementLinks/39fig09.jpg')">Figure 39-9</a> shows an example. More formally, stream compaction takes an input vector <em>v<sub>i</sub>
+   </em> and a predicate <em>p</em>, and outputs only those elements in <em>v<sub>i</sub>
+   </em> for which <em>p</em>(<em>v<sub>i</sub>
+   </em>) is true, preserving the ordering of the input elements. Horn (2005) describes this operation in detail.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig09.jpg')">
+      <img src="elementLinks/39fig09.jpg" alt="39fig09.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig09.jpg')">Figure 39-9</a> Stream Compaction Example</p>
+</div>
+<p>Stream compaction requires two steps, a scan and a scatter.</p>
+<ol>
+   <li>The first step generates a temporary vector where the elements that pass the predicate are set to 1 and the other elements are set to 0. We then scan this temporary vector. For each element that passes the predicate, the result of the scan now contains the destination address for that element in the output vector.
+</li>
+   <li>The second step scatters the input elements to the output vector using the addresses generated by the scan.
+</li>
+</ol>
+<p>
+   <a href="javascript:popUp('elementLinks/39fig10.jpg')">Figure 39-10</a> shows this process in detail.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig10.jpg')">
+      <img src="elementLinks/39fig10.jpg" alt="39fig10.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig10.jpg')">Figure 39-10</a> Scan and Scatter</p>
+</div>
+<p>The GPUs on which Horn implemented stream compaction in 2005 did not have scatter capability, so Horn instead substituted a sequence of gather steps to emulate scatter. To compact <em>n</em> elements required log <em>n</em> gather steps, and while these steps could be implemented in one fragment program, this "gather-search" operation was fairly expensive and required more memory operations. The addition of a native scatter in recent GPUs makes stream compaction considerably more efficient. Performance of our stream compaction test is shown in <a href="javascript:popUp('elementLinks/39fig11.jpg')">Figure 39-11</a>.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig11.jpg')">
+      <img src="elementLinks/39fig11.jpg" alt="39fig11.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig11.jpg')">Figure 39-11</a> Performance of Stream Compaction Implemented in CUDA on an NVIDIA GeForce 8800 GTX GPU</p>
+</div>
+<h4>39.3.2 Summed-Area Tables</h4>
+<p>A summed-area table (SAT) is a two-dimensional table generated from an input image in which each entry in the table stores the sum of all pixels between the entry location and the lower-left corner of the input image. Summed-area tables were introduced by Crow (1984), who showed how they can be used to perform arbitrary-width box filters on the input image. The power of the summed-area table comes from the fact that it can be used to perform filters of different widths at every pixel in the image in constant time per pixel. Hensley et al. (2005) demonstrated the use of fast GPU-generated summed-area tables for interactive rendering of glossy environment reflections and refractions. Their implementation on GPUs used a scan operation equivalent to the naive implementation in Section 39.2.1. A work-efficient implementation in CUDA allows us to achieve higher performance. In this section we describe how summed-area tables can be computed using scans in CUDA, and we demonstrate their use in rendering approximate depth of field.</p>
+<p>To compute the summed-area table for a two-dimensional image, we simply apply a sum scan to all rows of the image followed by a sum scan of all columns of the result. To do this efficiently in CUDA, we extend our basic implementation of scan to perform many independent scans in parallel. Thanks to the "grid of thread blocks" semantics provided by CUDA, this is easy; we use a two-dimensional grid of thread blocks, scanning one row of the image with each row of the grid. Modifying scan to support this requires modifying only the computation of the global memory indices from which the data to be scanned in each block are read. Extending scan to also support scanning columns would lead to poor performance, because column scans would require large strides through memory between threads, resulting in noncoalesced memory reads (NVIDIA 2007). Instead, we simply transpose the image after scanning the rows, and then scan the rows of the transposed image.</p>
+<p>Generating a box-filtered pixel using a summed-area table requires sampling the summed-area table at the four corners of a rectangular filter region, <em>s<sub>ur</sub>
+   </em>, <em>s<sub>ul</sub>
+   </em>, <em>s<sub>ll</sub>
+   </em>, <em>s<sub>lr</sub>
+   </em>. The filtered result is then</p>
+<p>
+   <img src="elementLinks/869equ01.jpg" alt="869equ01.jpg" />
+</p>
+<p>where <em>w</em> and <em>h</em> are the width and height of the filter kernel, and <em>s<sub>ur</sub>
+   </em> is the upper-right corner sample, <em>s<sub>ll</sub>
+   </em> is the lower-left corner sample, and so on (Crow 1977). We can use this technique for variable-width filtering, by varying the locations of the four samples we use to compute each filtered output pixel.</p>
+<p>
+   <a href="javascript:popUp('elementLinks/39fig12.jpg')">Figure 39-12</a> shows a simple scene rendered with approximate depth of field, so that objects far from the focal length are blurry, while objects at the focal length are in focus. In the first pass, we render the teapots and generate a summed-area table in CUDA from the rendered image using the technique just described. In the second pass, we render a full-screen quad with a shader that samples the depth buffer from the first pass and uses the depth to compute a blur factor that modulates the width of the filter kernel. This determines the locations of the four samples taken from the summed-area table at each pixel.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig12.jpg')">
+      <img src="elementLinks/39fig12.jpg" alt="39fig12.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig12.jpg')">Figure 39-12</a> Approximate Depth of Field Rendered by Using a Summed-Area Table to Apply a Variable-Size Blur to the Image Based on the Depth of Each Pixel</p>
+</div>
+<p>Rather than write a custom scan algorithm to process RGB images, we decided to use our existing code along with a few additional simple kernels. Computing the SAT of an RGB8 input image requires four steps. First we de-interleave the RGB8 image into three separate floating-point arrays (one for each color channel). Next we scan all rows of each array in parallel. Then the arrays must be transposed and all rows scanned again (to scan the columns). This is a total of six scans of <em>width</em> x <em>height</em> elements each. Finally, the three individual summed-area tables are interleaved into the RGB channels of a 32-bit floating-point RGBA image. Note that we don't need to transpose the image again, because we can simply transpose the coordinates we use to look up into it. Table 39-1 shows the time spent on each of these computations for two image sizes.</p>
+<h4>Table 39-1. Performance of Our Summed-Area Table Implementation on an NVIDIA GeForce 8800 GTX GPU for Two Different Image Sizes</h4>
+<table>
+   <thead>
+      <tr>
+         <td>
+            <p>Resolution</p>
+         </td>
+         <td>
+            <p>(De)interleave (ms)</p>
+         </td>
+         <td>
+            <p>Transpose (ms)</p>
+         </td>
+         <td>
+            <p>6 Scans (ms)</p>
+         </td>
+         <td>
+            <p>Total (ms)</p>
+         </td>
+      </tr>
+   </thead>
+   <tbody>
+      <tr>
+         <td>
+            <p>
+               <strong>512x512</strong>
+            </p>
+         </td>
+         <td>
+            <p>0.44</p>
+         </td>
+         <td>
+            <p>0.23</p>
+         </td>
+         <td>
+            <p>0.97</p>
+         </td>
+         <td>
+            <p>1.64</p>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <p>
+               <strong>1024x1024</strong>
+            </p>
+         </td>
+         <td>
+            <p>0.96</p>
+         </td>
+         <td>
+            <p>0.84</p>
+         </td>
+         <td>
+            <p>1.70</p>
+         </td>
+         <td>
+            <p>3.50</p>
+         </td>
+      </tr>
+   </tbody>
+</table>
+<h4>39.3.3 Radix Sort</h4>
+<p>Previous GPU-based sorting routines have primarily used variants of bitonic sort (Govindaraju et al. 2006, Gre&szlig; and Zachmann 2006), an efficient, oblivious sorting algorithm for parallel processors. The scan primitive can be used as a building block for another efficient sorting algorithm on the GPU, <em>radix sort</em>.</p>
+<p>Our implementation first uses radix sort to sort individual chunks of the input array. Chunks are sorted in parallel by multiple thread blocks. Chunks are as large as can fit into the shared memory of a single multiprocessor on the GPU. After sorting the chunks, we use a parallel bitonic merge to combine pairs of chunks into one. This merge is repeated until a single sorted array is produced.</p>
+<h4> Step 1: Radix Sort Chunks</h4>
+<p>Radix sort is particularly well suited for small sort keys, such as small integers, that can be expressed with a small number of bits. At a high level, radix sort works as follows. We begin by considering one bit from each key, starting with the least-significant bit. Using this bit, we partition the keys so that all keys with a 0 in that bit are placed before all keys with a 1 in that bit, otherwise keeping the keys in their original order. See <a href="javascript:popUp('elementLinks/39fig13.jpg')">Figure 39-13</a>. We then move to the next least-significant bit and repeat the process.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig13.jpg')">
+      <img src="elementLinks/39fig13.jpg" alt="39fig13.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig13.jpg')">Figure 39-13</a> Radix Sort</p>
+</div>
+<p>Thus for <em>k</em>-bit keys, radix sort requires <em>k</em> steps. Our implementation requires one scan per step.</p>
+<p>The fundamental primitive we use to implement each step of radix sort is the <tt>split</tt> primitive. The input to <tt>split</tt> is a list of sort keys and their bit value <tt>b</tt> of interest on this step, either a true or false. The output is a new list of sort keys, with all false sort keys packed before all true sort keys.</p>
+<p>We implement <tt>split</tt> on the GPU in the following way, as shown in <a href="javascript:popUp('elementLinks/39fig14.jpg')">Figure 39-14</a>.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig14.jpg')">
+      <img src="elementLinks/39fig14.jpg" alt="39fig14.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig14.jpg')">Figure 39-14</a> The  Operation Requires a Single Scan and Runs in Linear Time with the Number of Input Elements</p>
+</div>
+<ol>
+   <li>In a temporary buffer in shared memory, we set a 1 for all false sort keys (<tt>b = 0</tt>) and a 0 for all true sort keys.
+</li>
+   <li>We then scan this buffer. This is the <tt>enumerate</tt> operation; each false sort key now contains its destination address in the scan output, which we will call <tt>f</tt>. These first two steps are equivalent to a stream compaction operation on all false sort keys.
+</li>
+   <li>The last element in the scan's output now contains the total number of false sort keys.<sup>
+         <a href="javascript:popUp('elementLinks/ch39fn01.html')">
+      [1]
+    </a>
+      </sup> We write this value to a shared variable, <tt>totalFalses</tt>.
+</li>
+   <li>Now we compute the destination address for the true sort keys. For a sort key at index <tt>i</tt>, this address is <tt>t = i - f + totalFalses</tt>. We then select between <tt>t</tt> and <tt>f</tt> depending on the value of <tt>b</tt> to get the destination address <tt>d</tt> of each fragment.
+</li>
+   <li>Finally, we scatter the original sort keys to destination address <tt>d</tt>. The scatter pattern is a perfect permutation of the input, so we see no write conflicts with this scatter.</li>
+</ol>
+<p>With <tt>split</tt>, we can easily implement radix sort. We begin by loading a block-size chunk of input from global memory into shared memory. We then initialize our current bit to the least-significant bit of the key, split based on the key, check if the output is sorted, and if not shift the current bit left by one and iterate again. When we are done, we copy the sorted data back to global memory. With large inputs, each chunk is mapped to a thread block and runs in parallel with the other chunks.</p>
+<h4> Step 2: Merge Sorted Chunks</h4>
+<p>After each block-size chunk is sorted, we use a recursive merge sort to combine two sorted chunks into one sorted chunk. If we have <em>b</em> sorted chunks of size <em>n</em>, we require log<sub>2</sub> 
+   <em>b</em> steps of merge to get one final sorted output at the end. On the first step, we perform <em>b</em>/2 merges in parallel, each on two <em>n</em>-element sorted streams of input and producing 2<em>n</em> sorted elements of output. On the next step, we do <em>b</em>/4 merges in parallel, each on two 2<em>n</em>-element sorted streams of input and producing 4<em>n</em> sorted elements of output, and so on.</p>
+<p>Our merge kernel must therefore operate on two inputs of arbitrary length located in GPU main memory. At a high level, our implementation keeps two buffers in shared memory, one for each input, and uses a parallel bitonic sort to merge the smallest elements from each buffer. It then refills the buffers from main memory if necessary, and repeats until both inputs are exhausted. All reads from global memory into shared memory and all writes to global memory are coherent and blocked; we also guarantee that each input element is read only once from global memory and each output element is written only once.</p>
+<p>In our merge kernel, we run <em>p</em> threads in parallel. The most interesting part of our implementation is the computation and sorting of the <em>p</em> smallest elements from two sorted sequences in the input buffers. <a href="javascript:popUp('elementLinks/39fig15.jpg')">Figure 39-15</a> shows this process. For <em>p</em> elements, the output of the pairwise parallel comparison between the two sorted sequences is bitonic and can thus be efficiently sorted with log<sub>2</sub> 
+   <em>p</em> parallel operations.</p>
+<div class="figure">
+   <a href="javascript:popUp('elementLinks/39fig15.jpg')">
+      <img src="elementLinks/39fig15.jpg" alt="39fig15.jpg" />
+   </a>
+   <p>
+      <a href="javascript:popUp('elementLinks/39fig15.jpg')">Figure 39-15</a> Merging Two Sorted Subsequences into One Sorted Sequence Is an Efficient Operation</p>
+</div>
+<h4>39.3.4 Previous Work</h4>
+<p>Scan was first proposed in the mid-1950s by Iverson as part of the APL programming language (Iverson 1962). Blelloch was one of the primary researchers to develop efficient algorithms using the scan primitive (Blelloch 1990), including the scan-based radix sort described in this chapter (Blelloch 1989).</p>
+<p>On the GPU, the first published scan work was Horn's 2005 implementation (Horn 2005). Horn's scan was used as a building block for a nonuniform stream compaction operation, which was then used in a collision-detection application. Horn's scan implementation had <em>O</em>(<em>n</em> log <em>n</em>) work complexity. Hensley et al. (2005) used scan for summed-area-table generation later that year, improving the overall efficiency of Horn's implementation by pruning unnecessary work. Like Horn's, however, the overall work complexity of Hensley et al.'s technique was also <em>O</em>(<em>n</em> log <em>n</em>).</p>
+<p>The first published <em>O</em>(<em>n</em>) implementation of scan on the GPU was that of Sengupta et al. (2006), also used for stream compaction. They showed that a hybrid work-efficient (<em>O</em>(<em>n</em>) operations with 2<em>n</em> steps) and step-efficient (<em>O</em>(<em>n</em> log <em>n</em>) operations with <em>n</em> steps) implementation had the best performance on GPUs such as NVIDIA's GeForce 7 Series. Sengupta et al.'s implementation was used in a hierarchical shadow map algorithm to compact a stream of shadow pages, some of which required refinement and some of which did not, into a stream of only the shadow pages that required refinement. Later that year, Gre&szlig; et al. (2006) also presented an <em>O</em>(<em>n</em>) scan implementation for stream compaction in the context of a GPU-based collision detection application. Unlike previous GPU-based 1D scan implementations, Gre&szlig; et al.'s application required a 2D stream reduction, which resulted in fewer steps overall. Gre&szlig; et al. also used their scan implementation for stream compaction, in this case computing a stream of valid overlapping pairs of colliding elements from a larger stream of potentially overlapping pairs of colliding elements.</p>
+<h2>39.4 Conclusion</h2>
+<p>The scan operation is a simple and powerful parallel primitive with a broad range of applications. In this chapter we have explained an efficient implementation of scan using CUDA, which achieves a significant speedup compared to a sequential implementation on a fast CPU, and compared to a parallel implementation in OpenGL on the same GPU. Due to the increasing power of commodity parallel processors such as GPUs, we expect to see data-parallel algorithms such as scan to increase in importance over the coming years.</p>
+<h2>39.5 References</h2>
+
+<p>
+   Blelloch, Guy E. 1989. "Scans as Primitive Parallel Operations." <em>IEEE Transactions on Computers</em> 38(11), pp. 1526&ndash;1538.</p>
+<p>
+   Blelloch, Guy E. 1990. "Prefix Sums and Their Applications." Technical Report CMU-CS-90-190, School of Computer Science, Carnegie Mellon University.</p>
+<p>
+   Crow, Franklin. 1984. "Summed-Area Tables for Texture Mapping." In <em>Computer Graphics (Proceedings of SIGGRAPH 1984)</em> 18(3), pp. 207&ndash;212.</p>
+<p>
+   Govindaraju, Naga K., Jim Gray, Ritesh Kumar, and Dinesh Manocha. 2006. "GPUTeraSort: High Performance Graphics Coprocessor Sorting for Large Database Management." In <em>Proceedings of the 2006 ACM SIGMOD International Conference on Management of Data</em>, pp. 325&ndash;336.</p>
+<p>
+   Gre&szlig;, Alexander, and Gabriel Zachmann. 2006. "GPU-ABiSort: Optimal Parallel Sorting on Stream Architectures." In <em>Proceedings of the 20th IEEE International Parallel and Distributed Processing Symposium</em>.</p>
+<p>
+   Gre&szlig;, Alexander, Michael Guthe, and Reinhard Klein. 2006. "GPU-Based Collision Detection for Deformable Parameterized Surfaces." <em>Computer Graphics Forum</em> 25(3), pp. 497&ndash;506.</p>
+<p>
+   Hensley, Justin, Thorsten Scheuermann, Greg Coombe, Montek Singh, and Anselmo Lastra. 2005. "Fast Summed-Area Table Generation and Its Applications." <em>Computer Graphics Forum</em> 24(3), pp. 547&ndash;555.</p>
+<p>
+   Hillis, W. Daniel, and Guy L. Steele, Jr. 1986. "Data Parallel Algorithms." <em>Communications of the ACM</em> 29(12), pp. 1170&ndash;1183.</p>
+<p>
+   Horn, Daniel. 2005. "Stream Reduction Operations for GPGPU Applications." In <em>GPU Gems 2</em>, edited by Matt Pharr, pp. 573&ndash;589. Addison-Wesley.</p>
+<p>
+   Iverson, Kenneth E. 1962. <em>A Programming Language</em>. Wiley.</p>
+<p>
+   Lichterman, David. 2007. Course project for UIUC ECE 498 AL: Programming Massively Parallel Processors. Wen-Mei Hwu and David Kirk, instructors. <a onclick="newwindow(this)" href="http://courses.ece.uiuc.edu/ece498/al/">http://courses.ece.uiuc.edu/ece498/al/</a>.</p>
+<p>
+   NVIDIA Corporation. 2007. <em>NVIDIA CUDA Compute Unified Device Architecture Programming Guide</em>. Version 0.8.1.</p>
+<p>
+   Quinn, Michael J. 1994. <em>Parallel Computing: Theory and Practice</em>, 2nd ed. McGraw-Hill.</p>
+<p>
+   Sengupta, Shubhabrata, Aaron E. Lefohn, and John D. Owens. 2006. "A Work-Efficient Step-Efficient Prefix Sum Algorithm." In <em>Proceedings of the Workshop on Edge Computing Using New Commodity Architectures</em>, pp. D-26&ndash;27.</p>
+
+
+		<!-- generated html end -->
+
+
+
+<!-- <div align="right" style=" color:#999999;">Last Update: 12:39 07/17/2009</div> -->
+
+  </div>
+
+  
+
+  <div id="left" class="column">		
+
+    <a href="http://developer.nvidia.com">Developer Site Homepage</a><br><br>
+
+		<a href="http://news.developer.nvidia.com/">Developer News Homepage</a><br><br>
+
+
+
+		<img src="http://developer.nvidia.com/docs/TEMPLATE/431/divider.gif" align="" border="0" alt=""><br><br>
+
+
+
+		<a href="https://nvdeveloper.nvidia.com/">Developer Login</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/registered_developer_program.html">Become a<br>Registered Developer</a><br><br>
+
+
+
+		<img src="http://developer.nvidia.com/docs/TEMPLATE/431/divider.gif" align="" border="0" alt=""><br><br>
+
+
+
+		<a href="http://developer.nvidia.com/page/tools.html">Developer Tools</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/documentation.html">Documentation</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/directx.html">DirectX</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/opengl.html">OpenGL</a><br><br>
+
+		<a href="http://developer.nvidia.com/object/cuda.html">GPU Computing</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/handheld.html">Handheld</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/event_calendar.html">Events Calendar</a><br><br>
+
+
+
+		<img src="http://developer.nvidia.com/docs/TEMPLATE/431/divider.gif" align="" border="0" alt=""><br><br>
+
+
+
+		<a href="http://developer.nvidia.com/object/newsletter_signup.html">Newsletter Sign-Up</a><br><br>
+
+		<a href="http://developer.nvidia.com/object/downloading_drivers.html">Drivers</a><br><br>
+
+		<a href="http://developer.nvidia.com/page/jobs.html">Jobs (1)</a><br><br>
+
+		<a href="http://developer.nvidia.com/object/contact_us.html">Contact</a><br><br>
+
+		<a href="http://developer.nvidia.com/object/legal_info.html">Legal Information</a><br><br>
+
+
+
+		<img src="http://developer.nvidia.com/docs/TEMPLATE/431/divider.gif" align="" border="0" alt=""><br><br>
+
+		<a href="http://surveys.nvidia.com/index.jsp?pi=c1655cd3f4d0fb4bfdee853f141f9a75">Site Feedback</a>		
+
+	</div>
+
+	
+
+  <div id="right" class="column"><ul><li><a href="gpugems3_pref01.html">Foreword</a></li>
+<li><a href="gpugems3_pref02.html">Preface</a></li>
+<li><a href="gpugems3_pref03.html">Contributors</a></li>
+<li><a href="gpugems3_copyrightpg.html">Copyright</a></li>
+<li><a href="gpugems3_part01.html"><I>Part I: Geometry</I></a></li>
+<ul>
+<li><a href="gpugems3_ch01.html">Chapter 1. Generating Complex Procedural Terrains Using the GPU</a></li>
+<li><a href="gpugems3_ch02.html">Chapter 2. Animated Crowd Rendering</a></li>
+<li><a href="gpugems3_ch03.html">Chapter 3. DirectX 10 Blend Shapes: Breaking the Limits</a></li>
+<li><a href="gpugems3_ch04.html">Chapter 4. Next-Generation SpeedTree Rendering</a></li>
+<li><a href="gpugems3_ch05.html">Chapter 5. Generic Adaptive Mesh Refinement</a></li>
+<li><a href="gpugems3_ch06.html">Chapter 6. GPU-Generated Procedural Wind Animations for Trees</a></li>
+<li><a href="gpugems3_ch07.html">Chapter 7. Point-Based Visualization of Metaballs on a GPU</a></li>
+</ul><li><a href="gpugems3_part02.html"><I>Part II: Light and Shadows</I></a></li>
+<ul>
+<li><a href="gpugems3_ch08.html">Chapter 8. Summed-Area Variance Shadow Maps</a></li>
+<li><a href="gpugems3_ch09.html">Chapter 9. Interactive Cinematic Relighting with Global Illumination</a></li>
+<li><a href="gpugems3_ch10.html">Chapter 10. Parallel-Split Shadow Maps on Programmable GPUs</a></li>
+<li><a href="gpugems3_ch11.html">Chapter 11. Efficient and Robust Shadow Volumes Using Hierarchical Occlusion Culling and Geometry Shaders</a></li>
+<li><a href="gpugems3_ch12.html">Chapter 12. High-Quality Ambient Occlusion</a></li>
+<li><a href="gpugems3_ch13.html">Chapter 13. Volumetric Light Scattering as a Post-Process</a></li>
+</ul><li><a href="gpugems3_part03.html"><I>Part III: Rendering</I></a></li>
+<ul>
+<li><a href="gpugems3_ch14.html">Chapter 14. Advanced Techniques for Realistic Real-Time Skin Rendering</a></li>
+<li><a href="gpugems3_ch15.html">Chapter 15. Playable Universal Capture</a></li>
+<li><a href="gpugems3_ch16.html">Chapter 16. Vegetation Procedural Animation and Shading in Crysis</a></li>
+<li><a href="gpugems3_ch17.html">Chapter 17. Robust Multiple Specular Reflections and Refractions</a></li>
+<li><a href="gpugems3_ch18.html">Chapter 18. Relaxed Cone Stepping for Relief Mapping</a></li>
+<li><a href="gpugems3_ch19.html">Chapter 19. Deferred Shading in Tabula Rasa</a></li>
+<li><a href="gpugems3_ch20.html">Chapter 20. GPU-Based Importance Sampling</a></li>
+</ul><li><a href="gpugems3_part04.html"><I>Part IV: Image Effects</I></a></li>
+<ul>
+<li><a href="gpugems3_ch21.html">Chapter 21. True Impostors</a></li>
+<li><a href="gpugems3_ch22.html">Chapter 22. Baking Normal Maps on the GPU</a></li>
+<li><a href="gpugems3_ch23.html">Chapter 23. High-Speed, Off-Screen Particles</a></li>
+<li><a href="gpugems3_ch24.html">Chapter 24. The Importance of Being Linear</a></li>
+<li><a href="gpugems3_ch25.html">Chapter 25. Rendering Vector Art on the GPU</a></li>
+<li><a href="gpugems3_ch26.html">Chapter 26. Object Detection by Color: Using the GPU for Real-Time Video Image Processing</a></li>
+<li><a href="gpugems3_ch27.html">Chapter 27. Motion Blur as a Post-Processing Effect</a></li>
+<li><a href="gpugems3_ch28.html">Chapter 28. Practical Post-Process Depth of Field</a></li>
+</ul><li><a href="gpugems3_part05.html"><I>Part V: Physics Simulation</I></a></li>
+<ul>
+<li><a href="gpugems3_ch29.html">Chapter 29. Real-Time Rigid Body Simulation on GPUs</a></li>
+<li><a href="gpugems3_ch30.html">Chapter 30. Real-Time Simulation and Rendering of 3D Fluids</a></li>
+<li><a href="gpugems3_ch31.html">Chapter 31. Fast N-Body Simulation with CUDA</a></li>
+<li><a href="gpugems3_ch32.html">Chapter 32. Broad-Phase Collision Detection with CUDA</a></li>
+<li><a href="gpugems3_ch33.html">Chapter 33. LCP Algorithms for Collision Detection Using CUDA</a></li>
+<li><a href="gpugems3_ch34.html">Chapter 34. Signed Distance Fields Using Single-Pass GPU Scan Conversion of Tetrahedra</a></li>
+<li><a href="gpugems3_ch35.html">Chapter 35. Fast Virus Signature Matching on the GPU</a></li>
+</ul><li><a href="gpugems3_part06.html"><I>Part VI: GPU Computing</I></a></li>
+<ul>
+<li><a href="gpugems3_ch36.html">Chapter 36. AES Encryption and Decryption on the GPU</a></li>
+<li><a href="gpugems3_ch37.html">Chapter 37. Efficient Random Number Generation and Application Using CUDA</a></li>
+<li><a href="gpugems3_ch38.html">Chapter 38. Imaging Earth's Subsurface Using CUDA</a></li>
+<li><a href="gpugems3_ch39.html">Chapter 39. Parallel Prefix Sum (Scan) with CUDA</a></li>
+<li><a href="gpugems3_ch40.html">Chapter 40. Incremental Computation of the Gaussian</a></li>
+<li><a href="gpugems3_ch41.html">Chapter 41. Using the Geometry Shader for Compact and Variable-Length GPU Feedback</a></li>
+</ul>
+</div>
+
+</div>
+
+
+
+<div id="footer"></div>
+
+
+
+
+
+<!--WEBSIDESTORY CODE HBX1.0 (Universal)-->
+
+<!--COPYRIGHT 1997-2005 WEBSIDESTORY,INC. ALL RIGHTS RESERVED. U.S.PATENT No. 6,393,479B1. MORE INFO:http://websidestory.com/privacy-->
+
+<script language="javascript">
+
+var _hbEC=0,_hbE=new Array;function _hbEvent(a,b){b=_hbE[_hbEC++]=new Object();b._N=a;b._C=0;return b;}
+
+var hbx=_hbEvent("pv");hbx.vpc="HBX0100u";hbx.gn="a.nvidia.com";
+
+hbx.acct="DM55061879AA96EN3";//developer
+
+hbx.pn="PUT+PAGE+NAME+HERE";
+
+hbx.mlc="CONTENT+CATEGORY";
+
+hbx.pndef="home.html";
+
+hbx.ctdef="full";
+
+hbx.lt="auto";
+
+hbx.dlf=".run,.8bi,.asx,.bat,.cg,.chm,.cpp,.db,.dds,.dll,.dsp,.dsw,.fp,.fx,.fxcomposer,.fxproj,.h,.hdr,.hpp,.ico,.img,.inf,.ini,.key,.lib,.lst,.msi,.ncb,.opt,.P3D,.plg,.exr,.rc,.res,.sh,.sln,.spc,.str,.tga,.txt,.vcproj,.xml";
+
+</script><script language="javascript1.1" defer src="http://developer.nvidia.com/content/websidestory/hbx.js"></script>
+
+<!--END WEBSIDESTORY CODE-->
+
+
+
+</body>
+
+
+
+<link type="text/css" rel="stylesheet" href="dp.SyntaxHighlighter/Styles/SyntaxHighlighter.css"></link>
+
+<script language="javascript" src="dp.SyntaxHighlighter/Scripts/shCore.js"></script>
+
+<script language="javascript" src="dp.SyntaxHighlighter/Scripts/shBrushCpp.js"></script>
+
+<script language="javascript">
+
+dp.SyntaxHighlighter.ClipboardSwf = 'dp.SyntaxHighlighter/Scripts/clipboard.swf';
+
+dp.SyntaxHighlighter.HighlightAll('code');
+
+</script>
+
+
+
+<script type="text/javascript">
+
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+
+</script>
+
+<script type="text/javascript">
+
+var pageTracker = _gat._getTracker("UA-4670658-1");
+
+pageTracker._initData();
+
+pageTracker._trackPageview();
+
+</script>
+
+
+
+
+
+</html>

@@ -1,0 +1,92 @@
+<html><head>
+<title>CS267 Assignment 3: Parallelize Knapsack</title></head>
+
+<body>
+<h1>CS267 Assignment 3: Parallelize Knapsack</h1>
+<h2>Due <del>Tuesday April 3</del> Wednesday April 4, 2012 at 11:59pm</h2>
+
+
+<h2>Overview</h2>
+
+    <p>The purpose of this assignment is introduction to programming in 
+    Partitioned Global Address Space (PGAS) languages. You need to parallelize a solution of the 0-1 knapsack problem.
+    </p>
+
+    <p>
+    You have <tt>N</tt> items with 
+    <ul>
+      <li>positive integer weights {<tt>w[1], ..., w[N]</tt>} and </li>
+      <li>positive integer values {<tt>v[1], ..., v[N]</tt>} </li>
+    </ul>
+    The goal is to find a subset of the items such that
+    its total weight does not exceed given bag capacity <tt>C</tt> and 
+    its total value is the largest possible.
+    </p>
+
+    <p>We consider solving the problem using dynamic programming.
+    Define <tt>T[i,j]</tt> to be the maximum value that can be attained with weight &#8804; <tt>i</tt>
+    using items {<tt>1, ..., j</tt>}. 
+    Then it satisfies the following recurrence relation:
+
+    </p><p></p><center><tt>T[i,j] = max( T[i,j-1], T[i-w[j],j-1]+v[j] ).</tt></center>
+
+    <p>The value of the optimal solution is found at <tt>T[C,N]</tt>. 
+    Backtracking over the choices gives the items used in the solution.
+
+<h2>Assignment</h2>
+
+There are two parts to the assignment.
+<ol>
+<li> There is a bug in <tt>knapsack-race.upc</tt>. You will use the UPC-Thrille tool you learned about in <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr12/Lectures/cs267-upcthrille.pptx">Lecture 16</a> to identify a potential race condition. For part (1), you will run on Franklin, with the Portland Group compilers loaded (PrgEnv-pgi, the default). After downloading the source files, instrument the <tt>knapsack-race.upc</tt> code with UPC-Thrille by typing "<tt>make knapsack-race</tt>". Then, run the instrumented code with "<tt>qsub job-knapsack-race</tt>" from Bash (shell). If you use another shell (like csh, the default), you must call "<tt>qsub -S /bin/bash job-knapsack-race</tt>", or switch shells explictly (e.g., typing "<tt>bash</tt>" before calling "<tt>qsub</tt>"). Examine the resulting output file to find the race condition. Then, you must modify <tt>knapsack-race.upc</tt> to fix the potential race condition without altering correctness -- assume that if no data race occurs, then <tt>knapsack-race.upc</tt> gives the correct answer. In your writeup, you must show the output of the UPC-Thrille tool indicating detection of the potential race condition. You must clearly explain the bug and the fix you implemented. Lastly you must include the UPC-Thrille output showing that your fix indeed removed the race condition. You do not need to submit your (fixed) <tt>knapsack-race.upc</tt></li>.
+<li> Implement <tt>knapsack.upc</tt> that solves the 0-1 knapsack problem -- your code must get the correct answer, like the provided serial and parallel (fixed) codes. You must use UPC - the Makefile is designed for the Cray UPC compiler (PrgEnv-cray) but the Berkeley UPC compiler (module load bupc) is also available. Explain your parallelization strategy in your write-up, especially the communication pattern between parallel processors. Run scaling experiments with 1 to 32 cores (1 to 8 nodes) of Franklin (at least test {1,2,3,4,5,8,16,24,32} cores). Your report should include performance plots demonstrating strong scaling (constant global problem size) and weak scaling (constant per-thread problem size). Try different local (per-thread) problem sizes - how do your strong and weak scaling curves change? Feel free to experiment on Hopper as well.</li>
+</ol>
+
+<h2>Source Code</h2>
+<table><tbody><tr><td width="20pt"></td><td>
+<dl>
+  <dt><a href="hw3/serial.cpp">serial.cpp</a></dt>
+  <dd>a serial implementation that you need to efficiently parallelize,</dd>
+  <dt><a href="hw3/knapsack-race.upc">knapsack-race.upc</a></dt>
+  <dd>a naive and very inefficient parallel implementation in UPC, with a bug</dd>
+  <dt><a href="hw3/Makefile">Makefile</a></dt>
+  <dd>a Makefile for Franklin. Note that you must use PrgEnv-pgi for Part (1) ("make knapsack-race") and PrgEnv-cray for part (2) ("make serial" and "make knapsack").</dd>
+  <dt>
+  <a href="hw3/job-serial">job-serial</a>,
+  <a href="hw3/job-knapsack-race">job-knapsack-race</a>,
+  <a href="hw3/job-knapsack">job-knapsack</a>
+  </dt>
+  <dd>sample batch files to launch jobs on Franklin. The third is for your own code, <tt>knapsack.upc</tt>. </dd>
+</dl></td></tr></tbody></table>
+
+    The supplied (naive) parallel code uses a cyclic layout and
+    computes entries corresponding to the same item (<tt>T[:,j]</tt>) in parallel.
+    Barrier synchronization is used when proceding to next item. 
+    This means a lot of fine-grain communication - the parallel code may run slower than the serial code!
+    </p>
+    
+    <p>Your goal is to get better scaling vs. the serial code. To improve parallel efficiency,
+    consider blocking rows and/or columns (of <tt>T</tt>), and using bulk communication and/or pipelined computation.
+    Using UPC is a requirement.
+
+    </p><p>You may work in groups of 2 or 3.
+    <a href="mailto:cs267.sp12@gmail.com">Email the GSIs</a> your write-up and source codes.
+
+
+    </p><h2>Resources</h2>
+    <ul>
+      <li>                            
+      <a href="http://www.cs.berkeley.edu/~demmel/cs267_Spr12/Lectures/lecture08_upc_kay12.ppt">Lecture 8 - UPC</a>,
+      <a href="http://upc.gwu.edu/docs/upc_specs_1.2.pdf">UPC Specification</a>,
+      <a href="http://upc.lbl.gov/">Berkeley UPC Group</a>.
+      </li><li><a href="http://gasnet.cs.berkeley.edu/">GASNet</a> is a high-performance
+      network layer that supports one-sided communication in UPC.
+      </li><li>Other PGAS languages:
+      <a href="http://domino.research.ibm.com/comm/research_projects.nsf/pages/x10.index.html">X10</a>,
+      <a href="http://titanium.cs.berkeley.edu/">Titanium</a>,
+      <a href="http://www.co-array.org/">Co-Array Fortran</a>,
+      <a href="http://chapel.cs.washington.edu/">Chapel</a>.
+      </li></ul>
+
+<hr>
+[ <a href="http://www.cs.berkeley.edu/~knight/cs267/resources.html">Back to CS267 Resource Page</a> ]
+</body></html>
