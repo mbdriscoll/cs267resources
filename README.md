@@ -5,8 +5,8 @@ To publish:
 
     ./deploy.sh
 
-You will need an ssh alias for 'eecs':
+You will need an ssh alias for 'eecs' in ~/.ssh/config:
 
      Host eecs
-     Hostname login.eecs.berkeley.edu
-     User driscoll
+         Hostname login.eecs.berkeley.edu
+         User driscoll
