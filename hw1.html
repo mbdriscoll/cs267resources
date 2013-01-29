@@ -12,7 +12,7 @@
 <h2><a name="problem">Problem statement</a></h2>
 
 <p>Your task is to optimize <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">matrix multiplication</a> (matmul) code to run fast on a single processor core of
-NERSC's <a href="http://www.nersc.gov/users/computational-systems/franklin/">Franklin</a> cluster. </p>
+NERSC's <a href="http://www.nersc.gov/users/computational-systems/hopper/"></a> machine. </p>
 
 We consider a special case of matmul:
 
@@ -34,17 +34,17 @@ This can be performed using 2<i>n</i><sup>3</sup> floating point operations (<i>
 <h2><a name="instructions">Instructions</a></h2>
 
 <ul>
-<li> You will be paired up in <a href="hw1teams.html">teams</a> of two. Let your instructors know if you still don't have a teammate after Feb 2.</li>
+<li> You will be paired up in teams of two. Let your instructors know if you still don't have a teammate after Feb 4.</li>
 <li> Your submission should be a gzipped tar archive, formatted (for Team 4) like:
-<tt>team4_hw1.tgz</tt>. It should contain:
+<tt>team04_hw1.tgz</tt>. It should contain:
 <ul>
 <li> <tt>dgemm-blocked.c</tt>, a C-language source file containing your implementation of the routine:
 <pre>  void square_dgemm(int, double*, double*, double*);</pre>
 described in pseudocode above. We provide an example <tt>dgemm-blocked.c</tt>, below.</li>
 <li> <tt>Makefile</tt>, only if you modified it. If you modified it, make sure it still correctly builds the provided <tt>benchmark.c</tt>, which we will use to grade your submission.</li>
-<li> <tt>team4_hw1.pdf</tt>, your write-up.</li>
+<li> <tt>team04_hw1.pdf</tt>, your write-up.</li>
 </ul>
-<a href="http://kb.iu.edu/data/acfi.html">This link</a> tells you how to use <tt>tar</tt> to make a <tt>.tgz</tt> file. <a href="mailto:cs267.sp12@gmail.com">Email your .tgz file to the GSIs</a>.
+<a href="http://kb.iu.edu/data/acfi.html">This link</a> tells you how to use <tt>tar</tt> to make a <tt>.tgz</tt> file. <a href="mailto:cs267.spr13@gmail.com">Email your .tgz file to the GSIs</a>.
 <li> Your write-up should contain:
 <ul>
 <li>the names of the people in your group,</li>
@@ -64,7 +64,7 @@ For the last requirement, you may run your implementation on <a href="http://www
 
 <li>Your grade will mostly depend on two factors:
 <ul>
-<li>performance sustained by your codes on Franklin,</li>
+<li>performance sustained by your codes on Hopper,</li>
 <li>explanations of the performance features you observed (including what didn't work)</li></ul>
 
 <li> 
@@ -72,7 +72,7 @@ There are other formulations of matmul (eg, <a href = "http://en.wikipedia.org/w
 
 <li>
 Your code must use <a href="http://en.wikipedia.org/wiki/Double-precision_floating-point_format">double-precision</a> to represent real numbers. 
-A common reference for double-precision matrix multiplication is the <a href="http://www.netlib.org/blas/dgemm.f"><tt>dgemm</tt></a> (<u>d</u>ouble-precision <u>ge</u>neral <u>m</u>atrix-<u>m</u>atrix multiply) routine in the level-3 <a href="http://netlib.org/blas/index.html">BLAS</a>. We will compare your implementation with the tuned <tt>dgemm</tt> implementation in the vendor-provided BLAS library - on Franklin (Cray XT4), we will compare with the Cray LibSci implementation of <tt>dgemm</tt>. Note that <tt>dgemm</tt> has a more general interface than <tt>square_dgemm</tt> - an <a href="#optional">optional</a> part of HW1 encourages you to explore this richer tuning space.</li>
+A common reference for double-precision matrix multiplication is the <a href="http://www.netlib.org/blas/dgemm.f"><tt>dgemm</tt></a> (<u>d</u>ouble-precision <u>ge</u>neral <u>m</u>atrix-<u>m</u>atrix multiply) routine in the level-3 <a href="http://netlib.org/blas/index.html">BLAS</a>. We will compare your implementation with the tuned <tt>dgemm</tt> implementation in the vendor-provided BLAS library - on Hopper (Cray XK6), we will compare with the Cray LibSci implementation of <tt>dgemm</tt>. Note that <tt>dgemm</tt> has a more general interface than <tt>square_dgemm</tt> - an <a href="#optional">optional</a> part of HW1 encourages you to explore this richer tuning space.</li>
 
     <li>You may use <a href="http://www.nersc.gov/users/computational-systems/hopper/programming/compiling-codes/">any compiler available</a>. We recommend starting with the GNU C compiler (<tt>gcc</tt>). If you use a compiler other than <tt>gcc</tt>, you will have to change the provided <tt>Makefile</tt>, which uses <tt>gcc</tt>-specific flags. Note that the default compilers, every time you open a new terminal, are PGI - you will have to type "<tt>module swap PrgEnv-pgi PrgEnv-gnu</tt>" to switch to, eg, GNU compilers. You can type <tt>"module list"</tt> to see which compiler wrapper you have loaded.</li>
     
@@ -95,13 +95,14 @@ A common reference for double-precision matrix multiplication is the <a href="ht
 <pre> |square_dgemm(n,A,B,0) - A*B| &lt; eps*n*|A|*|B|. </pre> 
 where <tt>eps</tt> := 2<sup>&#8211;52</sup> = 2.2 * 10<sup>&#8211;16</sup> is the <a href="http://en.wikipedia.org/wiki/Machine_epsilon">machine epsilon</a>.</li>
 
-<li>The <a href="http://www.nersc.gov/users/computational-systems/franklin/configuration/compute-nodes/">target processor</a> is a quad-core AMD Opteron 1356 (see <a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD documentation</a>). Its cores have separate 128-bit wide pipelines for addition and multiplication clocked at 2.3GHz.
-This yields 2 double-precision (ie, 64-bit) flops per pipeline * 2 pipelines * 2.3 GHz = 9.2 Gflops/s.
-The following graph shows the performance of the supplied BLAS, blocked, and naive implementations (compiled using <tt>gcc</tt> with optimizations: <tt>-O3 -ffast-math -funroll-loops -march=amdfam10</tt>)
+<li>The <a href="http://www.nersc.gov/users/computational-systems/hopper/configuration/compute-nodes/">target processor</a> is a 24-core AMD MagnyCours running at 2.1 GHz (see <a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD documentation</a>), yielding 2 double-precision (ie, 64-bit) flops per pipeline * 2 pipelines * 2.1 GHz = 8.4 Gflops/s.
 
+<!--
+The following graph shows the performance of the supplied BLAS, blocked, and naive implementations (compiled using <tt>gcc</tt> with optimizations: <tt>-O3 -ffast-math -funroll-loops -march=amdfam10</tt>)
 <br><br>
 </p><center><img src="hw1/franklin_perf.png"></center>
 <br>
+-->
 
 Part of your grade depends on how fast your code runs, relative to the supplied codes. In previous years, some students actually beat the vendor-optimized BLAS.</li>
 </ul>
@@ -113,7 +114,7 @@ Part of your grade depends on how fast your code runs, relative to the supplied 
 <ul>
 <li> Implement Strassen matmul. Consider switching over to the three-nested-loops algorithm when the recursive subproblems are small enough.</li>
 <li> Support the <tt>dgemm</tt> interface (ie, rectangular matrices, transposing, scalar multiples).</li>
-<li> Try <tt>float</tt> (single-precision). This means you can use 4-way SIMD parallelism on Franklin.</li>
+<li> Try <tt>float</tt> (single-precision). This means you can use 4-way SIMD parallelism on Hopper.</li>
 <li>Try complex numbers (single- and double-precision) - note that complex numbers are part of C99 and <a href="http://gcc.gnu.org/onlinedocs/gcc/Complex.html">supported in <tt>gcc</tt></a>. <a href="http://stackoverflow.com/questions/3211346/complex-mul-and-div-using-sse-instructions">This forum thread</a> gives advice on vectorizing complex multiplication with the conventional approach - but note that there are <a href="http://en.wikipedia.org/wiki/Multiplication_algorithm#Gauss.27s_complex_multiplication_algorithm">other algorithms</a> for this operation.</li>
 <li> Optimize your matmul for the case when the inputs are symmetric. Consider <a href="http://www.netlib.org/lapack/lug/node122.html">conventional</a> and <a href="http://www.netlib.org/lapack/lug/node123.html">packed</a> symmetric storage.</li>
 
@@ -140,10 +141,10 @@ and a more cache-efficient blocked implementation.</p>
   <dt><a href="hw1/Makefile"><tt>Makefile</tt></a></dt>
   <dd>A simple makefile to build the executables,</dd>
   <dt><a href="hw1/job-blas"><tt>job-blas</tt></a>, <a href="hw1/job-blocked"><tt>job-blocked</tt></a>, <a href="hw1/job-naive"><tt>job-naive</tt></a></dt>
-  <dd>Scripts to run the executables on Franklin compute nodes. For example, type "<tt>qsub job-blas</tt>" to benchmark the BLAS version.</dd>
+  <dd>Scripts to run the executables on Hopper compute nodes. For example, type "<tt>qsub job-blas</tt>" to benchmark the BLAS version.</dd>
 </dl></td></tr></tbody></table>
 
-The documentation for Franklin's programming environment can be found <a href="#docs">below</a>.</p>
+The documentation for Hopper's programming environment can be found <a href="#docs">below</a>.</p>
 
 <h2><a name="refs">References</a></h2>
 <ul>
@@ -161,38 +162,15 @@ The documentation for Franklin's programming environment can be found <a href="#
 
 <h3><a name="docs">Documentation:</a></h3>
 <ul>
- <li><a href="http://www.nersc.gov/users/computational-systems/franklin/programming/">Franklin's programming environment</a> documentation
+ <li><a href="http://www.nersc.gov/users/computational-systems/hopper/programming/">Hopper's programming environment</a> documentation
   <li><a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD architecture</a> documentation.</li>
-  <li><a href="http://gcc.gnu.org/onlinedocs/">GCC</a> documentation - Franklin's default version currently is GCC 4.5.3, but offers older versions too.</li>
-  <li><a href="http://software.intel.com/en-us/avx/">Intel Intrinsic Guide</a> (scroll down). This Java program has a complete reference of all SIMD intrinsics on Intel architectures. Note that Franklin supports SSE, SSE2, SSE3, and <a href="http://en.wikipedia.org/wiki/SSE4a#SSE4a">SSE4a</a> (not SSE4) instruction sets.</li>
+  <li><a href="http://gcc.gnu.org/onlinedocs/">GCC</a> documentation - Hopper's default version currently is GCC 4.7.1, but offers older versions too.</li>
+  <li><a href="http://software.intel.com/en-us/avx/">Intel Intrinsic Guide</a> (scroll down). This Java program has a complete reference of all SIMD intrinsics on Intel architectures. Note that Hopper supports SSE, SSE2, SSE3, and <a href="http://en.wikipedia.org/wiki/SSE4a#SSE4a">SSE4a</a> (not SSE4) instruction sets.</li>
 </ul>
 You are also welcome to learn from the source code of state-of-art BLAS implementations
 such as <a href="http://www.tacc.utexas.edu/tacc-projects/gotoblas2">GotoBLAS</a> 
 and <a href="http://math-atlas.sourceforge.net/">ATLAS</a>.
 However, you should not reuse those codes in your submission.
-
-<h2><a name="results">Results</a></h2>
-<p> Below are results recorded on Franklin using the provided benchmark. Performance was reproducible to within 5%, so if you feel your performance is misrepresented, please re-run your submitted code to make sure, and then contact the GSIs (cs267.sp12@gmail.com) with this data.</p>
-<p> Note that</p>
-<ul>
-<li>Team -1 = naive blocked code (b=41) compiled with GNU, "<tt>-O1</tt>" optimization</li>
-<li>Team  0 = Cray LibSci <tt>DGEMM</tt> </li>
-<li>Team 17 = naive blocked code (b=41) compiled with GNU, "<tt>-O3 -ffast-math -funroll-loops -march=amdfam10</tt>" optimization</li>
-</ul>
-<table>
-<tr>
-<td><img src="hw1/hw1-perf-results-1.png" width="500" height="400" /></td>
-<td><img src="hw1/hw1-perf-results-2.png" width="500" height="400" /></td>
-</tr>
-<tr>
-<td><img src="hw1/hw1-perf-results-3.png" width="500" height="400" /></td>
-<td><img src="hw1/hw1-perf-results-4.png" width="500" height="400" /></td>
-</tr>
-<tr>
-</table>
-<td><img src="hw1/hw1-perf-results-5.png" width="500" height="400" /></td>
-<td><img src="hw1/hw1-perf-results-6.png" width="500" height="400" /></td>
-</tr>
 
 <hr>
 [ <a href="index.html">Back to CS267 Resource Page</a> ]
