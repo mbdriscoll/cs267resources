@@ -96,7 +96,11 @@ A common reference for double-precision matrix multiplication is the <a href="ht
 <pre> |square_dgemm(n,A,B,0) - A*B| &lt; eps*n*|A|*|B|. </pre> 
 where <tt>eps</tt> := 2<sup>&#8211;52</sup> = 2.2 * 10<sup>&#8211;16</sup> is the <a href="http://en.wikipedia.org/wiki/Machine_epsilon">machine epsilon</a>.</li>
 
-<li>The <a href="http://www.nersc.gov/users/computational-systems/hopper/configuration/compute-nodes/">target processor</a> is a 24-core AMD MagnyCours running at 2.1 GHz (see <a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD documentation</a>), yielding 2 double-precision (ie, 64-bit) flops per pipeline * 2 pipelines * 2.1 GHz = 8.4 Gflops/s.
+<li>The <a href="http://www.nersc.gov/users/computational-systems/hopper/configuration/compute-nodes/">target processor</a> is a 24-core AMD MagnyCours running at 2.1 GHz (see <a href="http://developer.amd.com/documentation/guides/Pages/default.aspx">AMD documentation</a>), yielding 2 double-precision (ie, 64-bit) flops per pipeline * 2 pipelines * 2.1 GHz = 8.4 Gflops/s. 
+
+<br><br>
+</p><center><img src="hw1/mm_cs267.png"></center>
+<br>
 
 <!--
 The following graph shows the performance of the supplied BLAS, blocked, and naive implementations (compiled using <tt>gcc</tt> with optimizations: <tt>-O3 -ffast-math -funroll-loops -march=amdfam10</tt>)
@@ -104,8 +108,7 @@ The following graph shows the performance of the supplied BLAS, blocked, and nai
 </p><center><img src="hw1/franklin_perf.png"></center>
 <br>
 -->
-
-Part of your grade depends on how fast your code runs, relative to the supplied codes. In previous years, some students actually beat the vendor-optimized BLAS.</li>
+Part of your grade depends on how fast your code runs, relative to the supplied codes. In previous years, some students actually beat the vendor-optimized BLAS. In contrast, the GSI's code runs at about 60% of peak. </li>
 </ul>
 
 
