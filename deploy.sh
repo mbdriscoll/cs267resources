@@ -1,4 +1,11 @@
 #!/bin/bash
 
 set -ex
-rsync -avz * login.eecs.berkeley.edu:~driscoll/public_html/cs267
+rsync -avz \
+  index.html \
+  hw0.html \
+  hw1.html \
+  hw3.html \
+  hw1 hw2 hw3 \
+  fig papers papers.html \
+  login.eecs.berkeley.edu:~driscoll/public_html/cs267
