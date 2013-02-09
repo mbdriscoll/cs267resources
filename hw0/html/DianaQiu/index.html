@@ -1,0 +1,101 @@
+ <!DOCTYPE html>
+<html>
+<title>Diana Qiu</title>
+<body>
+
+<h1>Diana Qiu </h1>
+<h1>Webpage for CS 267</h1>
+<hr>
+
+<h2>Contents </h2>
+<a href="#about">About Me</a><br>
+<a href="#BerkeleyGW">BerkeleyGW - An Application of Parallel Computing</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#gwintro">Intro to the GW Approximation</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#gwpp">BerkeleyGW - Parallelization and Performance</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#eps">Epsilon</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#sig">Sigma</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#gwanalysis">BerkeleyGW - Assessment</a><br>
+<a href="#ref">References</a><br>
+<hr>
+<a id="about"></a><h2>About Me</h2>
+
+<p>
+I am a 2nd year graduate student in the UC Berkeley Physics Department. I work in Professor Steven Louie's research group doing first principles calculations of electronic structure and material properties. I am currently working on calculating the band structure and optical spectra of two-dimensional materials like molybdenum disulfide (MoS<sub>2</sub>) and graphene on monolayer boron nitride. In my research, I use <a href="http://www.quantum-espresso.org/">Quantum ESPRESSO</a>, a software package for Density Functional Theory calculations, and <a href="http://www.berkeleygw.org/">BerkeleyGW</a>, a software package for calculating the excited state properties of materials using the GW approximation and by solving the Bethe-Salpeter Equation. BerkeleyGW is a massively parallel computational package developed by members of the Louie Group. I am interested in understanding it and contributing to further development.
+</p>
+
+<a id="BerkeleyGW"></a><h2>BerkeleyGW - An Application of Parallel Computing</h2>
+
+<a id="gwintro"></a><h3>Intro to the GW Approximation</h3>
+
+<p>
+The physics of single particles is well understood, and it is possible to write down equations describing systems of many particles. However, solving these equations for a large number of interacting particles, like those found in real materials, is extremely computationally intensive and cannot be done exactly. Instead, these systems are solved using various levels of approximation. One of the most widely used <i>ab initio</i> methods is Density Functional Theory (DFT). The main idea behind DFT is that there is one-to-one correspondence between the potential energy of the many body system and the electron charge density, and minimizing the energy as a functional of the charge density allows you to find the system's ground state energy and charge density. Thus, it is possible to reduce the equation describing the many body system to a set of self-consistent, one-particle equations called the Kohn-Sham Equations. The solutions to the Kohn-Sham equations are non-interacting, single-particle orbitals that reproduce the ground state electron density. DFT has been very successful at predicting ground state properties of molecules and solids, but it is less successful at predicting excited state properties, such as band gaps and the dielectric response, which are of great interest both fundamentally and for electronics applications.
+</p>
+
+<p>
+In the Kohn-Sham equations, the many-body exchange and correlation effects are approximated by a local exchange correlation functional. However, the correct way of treating the many-body exchange and correlation effects is through the non-local self-energy operator [<a href="#hedin">1</a>]. In the preceding discussion, the electrons are treated as non-interacting particles, which is counterintuitive since the Coulomb interaction, which dominates electron interactions, is extremely strong. In most materials, however, it's reasonable to keep an independent particle picture by describing a quasiparticle. The quasiparticle consists of an electron and a cloud of positive charge (due to Coulomb repulsion) that surrounds the electron and screens the Coulomb interaction enough to justify an independent particle picture. We can treat this screened coulomb interaction as a perturbation. In the GW approximation [<a href="#hedin">1</a>,<a href="#hybertsen louie">2</a>], the electron self-energy is expanded as a series in the screened Coulomb interaction, W, and the series is truncated at the first term:
+</p>
+<p align="center"><img border="00" src="./GW.png" width="220" height="15"> (1)</p>
+<p>
+Here, G is the one-particle Green's function and W is the screened Coulomb interaction. Typically, one iteration of the GW method is used to correct the self-energy from a previous DFT calculation; this is known as one-shot GW or G0W0. The GW method has proven to be very accurate in predicting band gaps (<a href="#egap">Fig. 1</a>).
+</p>
+<p><center><table class="image">
+<a id="egap"></a><caption align="bottom">Fig. 1: Experimental vs. theoretical band gap at the GW and DFT(LDA) levels for different materials. Figure taken from <a href="#Eg">Ref. 3</a>.</caption>
+<tr><td><img border="00" src="./egap.bmp" width="550" height="350" ></td></tr>
+</table></center>
+</p>
+<a id="gwpp"></a><h3>BerkeleyGW - Parallelization and Performance </h3>
+
+<p>
+BerkeleyGW is a massively parallel program written in Fortran90 that implements the GW method [<a href="#bgw">4</a>]. The GW approximation is implemented in two steps: 1) epsilon, which computes the inverse dielectric matrix and 2) sigma, which computes the self-energy correction using the inverse dielectric matrix. The calculation is done with a plane-wave basis in Fourier space:
+</p>
+
+<p align="center"><img border="00" src="./bloch_wave.png"> (2)</p>
+
+<p>
+Here, n refers to the band number and <b>k</b> refers to the momentum. Different parts of the calculation can be parallelized over <b>k</b>-points, bands and <b>G</b>-vectors. BerkeleyGW scales to 10,000's of CPUs and can simulated up to 100s of atoms.
+</p>
+<a id="eps"></a><h4>Epsilon: Calculating the Dielectric Matrix </h4>
+<p>
+The main part of epsilon involves calculating the polarizability which can be written as a matrix-matrix product:
+</p>
+<p align="center"><img border="00" src="./chi.png" width="400" height="40" > (3)</p>
+<p>
+Here, M is a matrix and (n,n',<b>k</b>) is a composite index, where n refers to occupied states, n' refers to unoccupied states, and <b>k</b> refers to a k-point. Thus, calculating epsilon has two major components: 1) computing the individual matrix elements and 2) matrix multiply. In many-body problems, it is customary to describe scaling in orders of N, where N is the number of atoms in the system. Calculating the matrix elements scales as N<sup>3</sup>logN. This step is parallelized over any factor of N<sub>c</sub>*N<sub>v</sub> processors, where N<sub>c</sub> is the number of unoccupied states and N<sub>v</sub> is the number of occupied states. The matrix multiply step scales as N<sup>4</sup>, since the index (n,n',<b>k</b>) scales as N<sup>2</sup> and dense matrix multiply scales as N<sup>2</sup>. This step is parallelized over <b>GG'</b>. Here is a plot of the speedup with respect to the number of CPUs used in the epsilon calculation: 
+</p>
+<p><center>
+<table class="image">
+<caption align="bottom">Fig. 2: Calculation time vs. number of CPUs per <b>q</b> point in an epsilon calculation. Figure taken from <a href="#bgw">Ref. 4</a>.</caption>
+<tr><td><img border="00" src="./epsilon_scaling.png" width="400" height="330" ></td></tr>
+</table></center>
+</table></center>
+</p>
+<a id="sig"></a><h4>Sigma: Calculating the Self-Energy Correction </h4>
+<p>
+The sigma executable calculates the self-energy correction. Within the GPP model, the most expensive part of the calculation involves calculating this term:
+</p>
+
+<p align="center"><img border="00" src="./sigma_coh.png" width="500" height="100" > (4)</p>
+
+<p>
+Computing the matrix elements scales as N<sup>2</sup>logN, where N is the number of atoms. This is a factor of N less than the matrix elements for epsilon because we are typically only interested in the quasiparticle correction for a small number of states. After computing the matrix elements, the summation over empty states, n'', scales as N<sup>3</sup>. The matrix element calculation is parallelized over n, n', and n'' by distributing the bands evenly over a number of processor pools. The pool size is chosen to minimize the number of CPUs required to store the wave functions. The summation is parallelized over n and n'. Here is a plot of the speedup with respect to the number of CPUs used in the sigma calculation: 
+<center><table class="image">
+<caption align="bottom">Fig. 3: Calculation time vs. number of CPUs per <b>k</b> point in a sigma calculation. Figure taken from <a href="#bgw">Ref. 4</a>.</caption>
+<tr><td><img border="00" src="./sigma_scaling.png" width="400" height="330" ></td></tr>
+</table></center>
+</p>
+
+<a id="gwanalysis"></a><h3>BerkeleyGW  - Assessment</h3>
+
+<p>
+The GW-BSE approach implemented in BerkeleyGW is regarded as the most accurate method for calculating the quasiparticle and optical properties of materials. It can reproduce experimental measurements with 50-100meV accuracy. The major drawback of the GW method is its computational cost. The calculation requires a summation over a large number of empty states. The number of empty states needed scales with the system size, so calculations for molecules and nanostructures is extremely expensive. Furthermore, as the number of states increases, so does the size of the wave function that must be stored in memory. Currently, BerkeleyGW can handle systems of on the order of 100 atoms. Most other implementations of the GW method are limited to 10s of atoms.
+</p>
+
+<a id="ref"></a><h2>References</h2>
+
+<p><a id="hedin">1. Lars Hedin and Stig Lundqvist, "Effects of Electron-Electron and Electron-Phonon Interactions on the One-Electron States of Solids," <i>Solid State Phys.</i> <b>23</b>, 1 (1970).</a></p>
+<p><a id="hybertsen louie">2. Mark S. Hybertsen and Steven G. Louie, "Electron correlation in semiconductors and insulators: Band gaps and quasiparticle energies," <i>Phys. Rev. B</i> <b>34</b>, 5390 (1986).</a></p>
+<p><a id="Eg">3. M. Van Schilfgaarde, Takao Kotani, S Faleev, "quasiparticle self-consistent GW theory," <i>Phys. Rev. Lett.</i> <b>96</b>, 226402 (2006).</a></p>
+<p><a id="bgw">4. Jack Deslippe, Georgy Samsonidze, David A. Strubbe, Manish Jain, Marvin L. Cohen, and Steven G. Louie, "BerkeleyGW: A Massively Parallel Computer Package for the Calculation of the Quasiparticle and Optical Properties of Materials and Nanostructures," <i>Comput. Phys. Commun.</i> <b>183</b>, 1269 (2012).</a></p>
+
+</body>
+</html>

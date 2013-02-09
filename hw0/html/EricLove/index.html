@@ -1,0 +1,182 @@
+<head>
+<title>
+CS267 HW #0
+</title>
+</head>
+
+<body>
+<h1> CS267 HW #0 </h1>
+<hr>
+<table>
+  <tr> 
+    <td> <h3>Contact Info </h3></td>
+    <th> </th>
+    <td> <h3> About Me </h3> </td>
+  </tr>
+  <tr>
+    <td>
+      Eric Love <br>
+      585 Soda Hall <br>
+      UC Berkeley <br>
+      ericlove@eecs.berkeley.edu
+    </td><td width=20>   </td>
+    <td>
+      I'm a second year PhD student in computer science, advised by Krste
+      Asanovic and John Kubiatowicz.  My broader areas of research interest
+      include computer architecture, hardware design, and until now
+      primarily
+      computer security.  More specifically, my recent work has focused on
+      hardware architectures for enabling privacy-preserving computation
+      in the cloud.
+      
+      <br><br>I'm taking CS267 because I'd like to try
+      my hand at writing parallel code and investigating what its bottlenecks
+      are on modern architectures, with the goal of eventually examining
+      how existing hardware might best be modified to run that code more
+      efficiently.
+    </td>
+  </tr>
+<table>
+<hr>
+<br>
+<h2> Parallel Application of Interest: </h2> 
+<h3> Accelerating Parallel Hash Joins </h2>
+<table border>
+  <tr> 
+    <th> Background Information </th>
+  </tr>
+  <tr> 
+    <td>
+      <table >
+        <tr>
+        <th width=150> What is a join? </th><th width=50></th>
+            <td>
+    In a relational database, a join takes two relations that have a common
+    attribute and finds all pairs of entries in the two tables that have the
+    same value for that attribute.  The most naive algorithm for this would
+    be to simply loop over all N^2 pairs of tuples (where both relations have
+    N tuples) and compare the selected attribute in each pair.  This is called
+    Nested Loops Join, and it is obviously not very efficient.
+            </td>
+          </tr>
+          <tr height=20></tr>
+          <tr>
+            <th> What is a hash join? </th><th></th>
+            <td>
+            The runtime of the a join can be reduced to O(N) in expectation by
+            using a hash join.  Assume the two relations are called R and S.
+            If we build a hash table of R, we can then scan the tuples in S,
+            hash them, and look for corresponding elements in the relevant
+            location(s) in R based on the hash value.  This means that the
+            tuples of S need only be scanned one time each.
+            </td>
+         </tr>
+        </table>
+
+        <tr> <th> Algorithmic Refinements for Real Hardware</th> </tr>
+        <tr>
+          <td>
+            <table>
+              <tr>
+              <th width=150> Way back in the 80's...</th><th width=50></th>
+              <td>
+              In the database engines of yesteryear, the main bottleneck was
+              disk I/O.  Main memory was a scarce enough resource that, not
+              only could a database never reside fully in DRAM, but neither
+              could even the smallest of relations that might be used in a join.
+              Building a hash table for even one full relation R is thus 
+              impossible, since it will take up even more memory than R alone
+              (due to the padding of the hash table by some factor F to minimize
+              collisions).  Virtual memory clearly can't solve this problem,
+              since it would result in frequent page faults, so what to do?
+              </td>
+              </tr>
+
+              <tr height=20></tr>
+              <tr>
+              <th width=150> The GRACE Hash Join </th><th></th>
+              <td>
+              A solution to inufficient memory is to <b>partition</b> both
+              of the relations, again using hashing, into sets on average small
+              enough to fit entirely in memory.  If a given value
+              of the join attribute in R hashes to a partition R1, then the
+              only tuples in S which need be compared against it are those 
+              that also hash to S1. 
+              R and S are partitioned in the first 
+              phase of the algorithm, and then, in the <b> join </b> phase,
+              a partition Ri is read in, and then a hash table is built in 
+              memory from its tuples.  The partition Si is then read in and
+              each of its tuples is hashed.  The corresponding location in
+              the in-memory hash table of Ri is <b> probed </b> to check for
+              any matches, and these are output.  The join phase is 
+              repeated for each of the partitions.  Both relations a read
+              entirely from disk twice, assuming the partitions are equally
+              sized (i.e. there is minimal <i> skew </i>), and each partition
+              is written to disk once.
+              </td>
+              </tr>
+
+              <tr height=20></tr>
+              <tr>
+              <th width=150> Exploiting Parallelism </th><th></th>
+              <td>
+              For the old-school Grace join, adding additional compute nodes
+              meant that (1.) more memory would be available and (2.) 
+              partionioning and joining could be parallellized.  Given a
+              sufficient number of nodes, each one could perhaps hold an entire 
+              partition in memory.  In the partition phase, each node would
+              read tuples from its disk, hash them, and send them to the node
+              hosting its designated partition.  Then, during the join phase,
+              each node could probe its own memory-resident hash table of Ri
+              with tuples from Si.  This is an over-simplification, of course,
+              since usually it's better to allocate some nodes for 
+              partitioning and some for joining, since otherwise each node
+              would have to split its memory between output buffers for
+              tuples waiting to be sent across the network, and the in-memory
+              hash table for Ri. [1]
+              </td>
+              </tr>
+
+              <tr height=20> </tr>
+              <tr>
+              <th width=150> On modern architectures </th><th></th>
+              <td> 
+              DRAM capacity has increased dramatically since the hash
+              join was first deployed, and now many databases can be
+              kept entirely in main memory on a single datacenter node, 
+              so minimizing disk I/Os is no 
+              longer the primary goal of join algorithm optimizations. However,
+              the same insights may apply to the algorithm's interaction
+              with other levels of the memory hierarchy.  More recent research
+              [3] has, for instance, explained how partitions must be sized
+              so as to fit into L2 caches, and how software prefetch 
+              instructions can improve the performance of the join phase.
+              Other research [4,5] has examined the efficacy of data-parallel
+              architectures for DB applications.
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </tr>
+</table>
+
+<br><br>
+<h3>References</h3>
+<br>
+[1]
+DeWitt, David J., and Robert Gerber. Multiprocessor hash-based join algorithms. 
+University of Wisconsin-Madison, Computer Sciences Department, 1985.
+<br><br>
+[2]
+DeWitt, David J., et al. Implementation techniques for main memory database systems. Vol. 14. No. 2. ACM, 1984.
+<br><br>
+[3]
+Kim, Changkyu, et al. "Sort vs. Hash revisited: fast join implementation on modern multi-core CPUs." Proceedings of the VLDB Endowment 2.2 (2009): 1378-1389.
+<br><br>
+[4]
+Martin, Rich. "A Vectorized Hash Join." unpublished course report, University of California at Berkeley, May (1996).
+<br><br>
+[5]
+Hayes, Timothy. "Decision Support Database Management System Acceleration Using Vector Processor." Barcelona Supercomputing Center, 2011.
+
+</body>
