@@ -1,5 +1,5 @@
 #
-# Franklin and Hopper
+# Hopper
 #
 CC = CC
 MPCC = CC
