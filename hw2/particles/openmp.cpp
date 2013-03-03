@@ -33,7 +33,7 @@ int main( int argc, char **argv )
     double simulation_time = read_timer( );
 
     #pragma omp parallel
-    for( int step = 0; step < 1000; step++ )
+    for( int step = 0; step < NSTEPS; step++ )
     {
         //
         //  compute all forces
