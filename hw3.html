@@ -36,7 +36,7 @@
 <h2>Assignment</h2>
 
 <p>
-Implement <tt>knapsack.upc</tt> that solves the 0-1 knapsack problem -- your code must get the correct answer, like the provided serial and parallel (fixed) codes. You must use UPC - the Makefile is designed for the Cray UPC compiler (PrgEnv-cray) but the Berkeley UPC compiler (module load bupc) is also available. Explain your parallelization strategy in your write-up, especially the communication pattern between parallel processors. Run scaling experiments with 1 to 192 cores (1 to 8 nodes) of Hopper (at least test {1,2,3,4,12,24,48,96,192} cores). Your report should include performance plots demonstrating strong scaling (constant global problem size) and weak scaling (constant per-thread problem size). Try different local (per-thread) problem sizes - how do your strong and weak scaling curves change?
+Implement <tt>knapsack.upc</tt> that solves the 0-1 knapsack problem -- your code must get the correct answer, like the provided serial and parallel codes. You must use UPC - the Makefile is designed for the Cray UPC compiler (PrgEnv-cray) but the Berkeley UPC compiler (module load bupc) is also available. Explain your parallelization strategy in your write-up, especially the communication pattern between parallel processors. Run scaling experiments with 1 to 192 cores (1 to 8 nodes) of Hopper (at least test {1,2,3,4,12,24,48,96,192} cores). Your report should include performance plots demonstrating strong scaling (constant global problem size) and weak scaling (constant per-thread problem size). Try different local (per-thread) problem sizes - how do your strong and weak scaling curves change?
 </p>
 
 <h2>Source Code</h2>
